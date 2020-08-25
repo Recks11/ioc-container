@@ -106,7 +106,7 @@ class BeanContainerTest {
         assertTrue(context.containsBean("namedBean"));
         assertTrue(context.containsBean("customBean"));
         assertTrue(context.containsBean(Named.class));
-        assertEquals(beanStore.getBeanTypeMap().size(), 3);
+        assertEquals(beanStore.getBeanTypeMap().size(), 4);
         assertEquals(beanStore.getBeanTypeMap().get(Named.class.getName()).size(), 2);
     }
 }
