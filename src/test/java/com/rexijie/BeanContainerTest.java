@@ -7,6 +7,7 @@ import com.rexijie.ioc.beans.BeanFactory;
 import com.rexijie.ioc.beans.DefaultBeanStore;
 import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.context.DefaultApplicationContext;
+import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.mock.*;
 import org.junit.jupiter.api.Assertions;
@@ -70,6 +71,14 @@ class BeanContainerTest {
         Assertions.assertThrows(NoSuchBeanException.class, () ->
                         context.getBean(Named.class),
                 "Bean was created from interface but was meant to throw error");
+    }
+
+    @Test
+    void throwsErrorWhenBeanCreatedWithJdkProvidedTypeInConstructor() {
+        ApplicationContext context = new DefaultApplicationContext();
+        Assertions.assertThrows(BeanCreationError.class,
+                () -> context.addBean(StringParamClass.class),
+                "Bean was created with class from Jdk provided class but was meant to throw error");
     }
 
     @Test
