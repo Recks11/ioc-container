@@ -74,8 +74,11 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         try {
             Object obj = method.invoke(thisObj, args);
             beanStore.addBean(name, obj);
-            BeanWrapper<?> beanWrapper = beanStore.getBeanCache().get(name);
-            processBeanAnnotation(annotation, beanWrapper);
+
+            synchronized (beanStore.getBeanCache()) {
+                BeanWrapper<?> beanWrapper = beanStore.getBeanCache().get(name);
+                processBeanAnnotation(annotation, beanWrapper);
+            }
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanCreationError(e);
         }

@@ -3,6 +3,7 @@ package com.rexijie.ioc.beans;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
+import com.rexijie.ioc.util.ClassUtils;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -84,16 +85,18 @@ public class DefaultBeanStore implements BeanStore {
 
     @Override
     public <T> void addBean(String key, T bean) {
-        if (containsBean(key)) return;
+        synchronized (this.beanCache) {
+            if (containsBean(key)) return;
 
-        BeanWrapper<T> beanWrapper = new BeanWrapper<>(bean);
-        if (key != null && !key.isEmpty()) beanWrapper.setName(key);
+            BeanWrapper<T> beanWrapper = new BeanWrapper<>(bean);
+            if (key != null && !key.isEmpty()) beanWrapper.setName(key);
 
-        beanCache.put(beanWrapper.getName(), beanWrapper);
-        populateTypeMap(bean.getClass(), beanWrapper.getName());
+            beanCache.put(beanWrapper.getName(), beanWrapper);
+            addInterfacesToTypeMap(bean.getClass(), beanWrapper.getName());
 
-        beanAnnotationProcessor.processAnnotation(beanWrapper);
+            beanAnnotationProcessor.processAnnotation(beanWrapper);
 
+        }
     }
 
     public void removeBean(String key) {
@@ -113,27 +116,18 @@ public class DefaultBeanStore implements BeanStore {
         return beanAnnotationProcessor;
     }
 
-    private <T> void populateTypeMap(Class<?> clazz, String beanName) {
-        for (Class<?> interfaceClass : clazz.getInterfaces()) {
-            addBeanTypeMapping(interfaceClass, beanName);
-            populateTypeMap(interfaceClass, beanName);
-        }
-
-        if (clazz.getSuperclass() == null) return;
-        if (!clazz.getSuperclass().equals(Object.class)) {
-            populateTypeMap(clazz.getSuperclass(), beanName);
+    private <T> void addInterfacesToTypeMap(Class<?> clazz, String beanName) {
+        Class<?>[] allInterfaces = ClassUtils.getAllInterfaces(clazz);
+        for (Class<?> ifc : allInterfaces) {
+            addBeanTypeMapping(ifc, beanName);
         }
     }
 
-    private void addBeanTypeMapping(Class<?> typeName, String name) {
+    private void addBeanTypeMapping(Class<?> typeName, String beanName) {
         String key = typeName.getName();
-        if (beanTypeMap.containsKey(typeName.getName())) {
-            Set<String> beans = beanTypeMap.get(key);
-            beans.add(name);
-        } else {
-            Set<String> beanNames = new HashSet<>();
-            beanTypeMap.put(key, beanNames);
-            addBeanTypeMapping(typeName, name);
+        synchronized (this.beanTypeMap) {
+            if (!containsBean(key)) beanTypeMap.put(key, new HashSet<>());
+            beanTypeMap.get(key).add(beanName);
         }
     }
 }

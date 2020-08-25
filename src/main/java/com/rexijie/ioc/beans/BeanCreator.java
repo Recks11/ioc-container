@@ -10,6 +10,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 
+import static com.rexijie.ioc.util.ClassUtils.isInternalType;
+
 /**
  * The BeanCreator is responsible for creating beans
  * Beans created by this class will be added to the provided {@link BeanStore}
@@ -25,14 +27,12 @@ import java.lang.reflect.Parameter;
 public class BeanCreator {
     private final Logger logger = Logger.getLogger(BeanCreator.class);
     private final BeanFactory beanFactory;
-    private final BeanAnnotationProcessor beanAnnotationProcessor;
 
     protected BeanCreator(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
-        this.beanAnnotationProcessor = new BeanAnnotationProcessor(beanFactory);
     }
 
-    protected <T> void createBean(String key, Class<T> clazz) {
+    protected synchronized <T> void createBean(String key, Class<T> clazz) {
         if (clazz.isPrimitive()) {
             throw new RuntimeException("cannot instantiate primitive classes");
         }
@@ -88,10 +88,9 @@ public class BeanCreator {
     // @TODO find classes this method does not work for
     private <T> void createAndStoreBean(String key, Constructor<T> c, Object... initArgs) {
         try {
-            String packageName = c.getDeclaringClass().getPackage().getName();
             String name = key != null ? key : c.getDeclaringClass().getName();
             if (beanFactory.containsBean(name)) return;
-            if (packageName.startsWith("java") | packageName.startsWith("jdk"))
+            if (isInternalType(c.getDeclaringClass()))
                 throw new BeanCreationError("Cannot Automatically create bean from internal class");
 
             executeBeforeCreate();
