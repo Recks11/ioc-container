@@ -2,7 +2,8 @@ package com.rexijie.ioc.annotations.processor;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.Bean;
-import com.rexijie.ioc.beans.BeanStore;
+import com.rexijie.ioc.beans.AbstractBeanFactory;
+import com.rexijie.ioc.beans.BeanFactory;
 import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
@@ -16,10 +17,10 @@ import java.lang.reflect.Parameter;
  */
 public class BeanAnnotationProcessor implements AnnotationProcessor {
 
-    private final BeanStore beanStore;
+    private final BeanFactory factory;
 
-    public BeanAnnotationProcessor(BeanStore beanStore) {
-        this.beanStore = beanStore;
+    public BeanAnnotationProcessor(BeanFactory beanFactory) {
+        this.factory = beanFactory;
     }
 
     @Override
@@ -66,19 +67,17 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         int index = 0;
         Object[] args = new Object[paramCount];
         for (Parameter parameter : method.getParameters()) {
-            if (!beanStore.containsBean(parameter.getType())) throw new NoSuchBeanException(parameter.getType());
-            args[index] = beanStore.getBean(parameter.getType());
+            if (!factory.containsBean(parameter.getType())) throw new NoSuchBeanException(parameter.getType());
+            args[index] = factory.getBean(parameter.getType());
             index++;
         }
 
         try {
             Object obj = method.invoke(thisObj, args);
-            beanStore.addBean(name, obj);
+            factory.registerBean(name, obj);
 
-            synchronized (beanStore.getBeanCache()) {
-                BeanWrapper<?> beanWrapper = beanStore.getBeanCache().get(name);
-                processBeanAnnotation(annotation, beanWrapper);
-            }
+            BeanWrapper<?> beanWrapper = ((AbstractBeanFactory)factory).getBeanCache().get(name);
+            processBeanAnnotation(annotation, beanWrapper);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanCreationError(e);
         }

@@ -1,17 +1,18 @@
 package com.rexijie.ioc.beans;
 
-import org.apache.log4j.Logger;
+import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
+import com.rexijie.ioc.errors.NoSuchBeanException;
+
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * This class is the skeleton for a bean store
  * it contains the bean cache which stores instances of beans
  * and default methods to add and remove beans
  */
-public abstract class AbstractBeanFactory implements BeanFactory {
-    private final Logger logger = Logger.getLogger(AbstractBeanFactory.class);
+public abstract class AbstractBeanFactory extends DefaultBeanStore implements BeanFactory {
     private final BeanCreator bC = new BeanCreator(this);
-    private BeanKeyGenerator beanKeyGenerator = new BeanKeyGenerator();
-    private BeanStore beanStore = new DefaultBeanStore();
 
     /**
      * Creates a bean store with itself as a bean
@@ -24,89 +25,57 @@ public abstract class AbstractBeanFactory implements BeanFactory {
         this.addBean(instance);
     }
 
-    @Override
-    public String generateBeanName(Class<?> clazz) {
-        return beanKeyGenerator.generateKey(clazz);
-    }
-
     public <T> void addBean(T beanInstance) {
-        addBean(beanInstance.getClass().getName(), beanInstance);
+        registerBean(beanInstance.getClass().getName(), beanInstance);
     }
 
     public <T> void addBean(Class<T> clazz) {
         addBean(null, clazz);
-        logInstanceCreation(clazz);
     }
 
     public <T> void addBean(String key, Class<T> clazz) {
-        bC.createBean(key, clazz);
-    }
-
-    public <T> void addBean(String key, T bean) {
-        beanStore.addBean(key, bean);
-    }
-
-    public void removeBean(String key) {
-        beanStore.removeBean(key);
-    }
-
-    public <T> void removeBean(Class<T> beanClass) {
-        String name = beanClass.getName();
-        removeBean(name);
-    }
-
-    @Override
-    public boolean containsBean(String name) {
-        return beanStore.containsBean(name);
-    }
-
-    @Override
-    public <T> boolean containsBean(T beanInstance) {
-        return containsBean(beanInstance.getClass().getName());
-    }
-
-    @Override
-    public <T> boolean containsBean(Class<T> beanClass) {
-        return containsBean(beanClass.getName());
-    }
-
-
-    @Override
-    public Object getBean(String name) {
-        return beanStore.getBean(name);
+//        bC.createBean(key, clazz);
+        Object bean = createBean(key, clazz);
+        registerBean(key, bean);
     }
 
     @Override
     public <T> T getBean(Class<T> clazz) {
-        return beanStore.getBean(clazz);
+        if (clazz.isInterface()) {
+            Set<String> beans = getBeanNamesOfType(clazz);
+            if (beans == null || beans.size() < 1) throw new NoSuchBeanException(clazz);
+            // if there is exactly one bean of this interface type
+            if (beans.size() == 1) {
+                String beanName = beans.iterator().next();
+                return getBean(beanName, clazz);
+            }
+
+            Optional<String> primaryBeanOptional = beans
+                    .stream()
+                    .filter(key -> getBeanCache().get(key).isPrimary())
+                    .findFirst();
+
+            if (primaryBeanOptional.isPresent()) {
+                return getBean(primaryBeanOptional.get(), clazz);
+            } else {
+                throw new MultipleBeansOfTypeException(clazz);
+            }
+        }
+
+        return getBean(clazz.getName(), clazz);
+    }
+
+    @Override
+    public Object getBean(String name) {
+        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
+
+        return getBeanCache().get(name).getBean();
     }
 
     @Override
     public <T> T getBean(String name, Class<T> clazz) {
-        return beanStore.getBean(name, clazz);
+        return clazz.cast(getBean(name));
     }
 
-    public void setBeanStore(BeanStore beanStore) {
-        this.beanStore = beanStore;
-    }
-
-    public BeanKeyGenerator getBeanKeyGenerator() {
-        return beanKeyGenerator;
-    }
-
-    public void setBeanKeyGenerator(BeanKeyGenerator beanKeyGenerator) {
-        this.beanKeyGenerator = beanKeyGenerator;
-    }
-
-    public BeanStore getBeanStore() {
-        return beanStore;
-    }
-
-    protected <T> void logInstanceCreation(Class<T> clazz) {
-        logger.debug("Created instance for class: ".concat(clazz.getName()));
-    }
-
-    protected void logBeanRetrieval(String name) {
-        logger.debug("Retrieving bean: ".concat(name));
-    }
+    abstract protected <T> Object createBean(String name, Class<T> clazz);
 }

@@ -1,7 +1,6 @@
 package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.Named;
-import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 import org.apache.log4j.Logger;
@@ -37,7 +36,6 @@ public class BeanCreator {
             throw new RuntimeException("cannot instantiate primitive classes");
         }
         if (clazz.isInterface()) {
-            key = beanFactory.generateBeanName(clazz);
             if (!beanFactory.containsBean(key)) {
                 throw new NoSuchBeanException(clazz);
             }
@@ -96,7 +94,7 @@ public class BeanCreator {
             executeBeforeCreate();
             T instance = c.newInstance(initArgs);
             executePostCreate();
-            beanFactory.addBean(name, instance);
+            beanFactory.registerBean(name, instance);
         } catch (IllegalAccessException e) {
             logger.error("No public constructor for class ".concat(c.getName()), e);
         } catch (InstantiationException e) {

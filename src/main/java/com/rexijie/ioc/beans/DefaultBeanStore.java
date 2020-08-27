@@ -1,13 +1,10 @@
 package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
-import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.ioc.util.ClassUtils;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,11 +16,6 @@ public class DefaultBeanStore implements BeanStore {
 
     public DefaultBeanStore() {
         this.beanAnnotationProcessor = new BeanAnnotationProcessor(this);
-    }
-
-    @Override
-    public Map<String, BeanWrapper<?>> getBeanCache() {
-        return beanCache;
     }
 
     @Override
@@ -41,50 +33,11 @@ public class DefaultBeanStore implements BeanStore {
         return containsBean(beanClass.getName());
     }
 
-    @Override
-    public <T> T getBean(Class<T> clazz) {
-        if (clazz.isInterface()) {
-            Set<String> beans = getBeanNamesOfType(clazz);
-            if (beans == null || beans.size() < 1) throw new NoSuchBeanException(clazz);
-            // if there is exactly one bean of this interface type
-            if (beans.size() == 1) {
-                String beanName = beans.iterator().next();
-                return getBean(beanName, clazz);
-            }
-
-            Optional<String> primaryBeanOptional = beans
-                    .stream()
-                    .filter(key -> beanCache.get(key).isPrimary())
-                    .findFirst();
-
-            if (primaryBeanOptional.isPresent()) {
-                return getBean(primaryBeanOptional.get(), clazz);
-            } else {
-                throw new MultipleBeansOfTypeException(clazz);
-            }
-        }
-
-        return getBean(clazz.getName(), clazz);
-    }
-
-    @Override
-    public Object getBean(String name) {
-        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
-
-        return beanCache.get(name).getBean();
-    }
-
-    @Override
-    public <T> T getBean(String name, Class<T> clazz) {
-        return clazz.cast(getBean(name));
-    }
-
     Set<String> getBeanNamesOfType(Class<?> clazz) {
         return beanTypeMap.get(clazz.getName());
     }
 
-    @Override
-    public <T> void addBean(String key, T bean) {
+    public <T> void registerBean(String key, T bean) {
         synchronized (this.beanCache) {
             if (containsBean(key)) return;
 
@@ -129,5 +82,9 @@ public class DefaultBeanStore implements BeanStore {
             if (!containsBean(key)) beanTypeMap.put(key, new HashSet<>());
             beanTypeMap.get(key).add(beanName);
         }
+    }
+
+    protected Map<String, BeanWrapper<?>> getBeanCache() {
+        return beanCache;
     }
 }
