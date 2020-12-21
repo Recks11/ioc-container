@@ -1,6 +1,5 @@
 package com.rexijie.ioc.beans;
 
-import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.util.ClassUtils;
 
 import java.util.HashSet;
@@ -12,10 +11,8 @@ public class DefaultBeanStore implements BeanStore {
 
     private final Map<String, BeanWrapper<?>> beanCache = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> beanTypeMap = new ConcurrentHashMap<>();
-    private final BeanAnnotationProcessor beanAnnotationProcessor;
 
     public DefaultBeanStore() {
-        this.beanAnnotationProcessor = new BeanAnnotationProcessor(this);
     }
 
     @Override
@@ -46,9 +43,6 @@ public class DefaultBeanStore implements BeanStore {
 
             beanCache.put(beanWrapper.getName(), beanWrapper);
             addInterfacesToTypeMap(bean.getClass(), beanWrapper.getName());
-
-            beanAnnotationProcessor.processAnnotation(beanWrapper);
-
         }
     }
 
@@ -63,10 +57,6 @@ public class DefaultBeanStore implements BeanStore {
 
     public Map<String, Set<String>> getBeanTypeMap() {
         return beanTypeMap;
-    }
-
-    public BeanAnnotationProcessor getBeanAnnotationProcessor() {
-        return beanAnnotationProcessor;
     }
 
     private <T> void addInterfacesToTypeMap(Class<?> clazz, String beanName) {

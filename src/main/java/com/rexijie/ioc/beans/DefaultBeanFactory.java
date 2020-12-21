@@ -1,41 +1,35 @@
-package com.rexijie.ioc.context;
+package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.CompositeAnnotationProcessor;
-import com.rexijie.ioc.beans.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DefaultApplicationContext extends AbstractBeanFactory implements ApplicationContext {
-    private String name;
-    private final BeanCreator beanCreator = new BeanCreator(this);
-    private final AnnotationProcessor annotationProcessor;
+public class DefaultBeanFactory extends AbstractBeanFactory {
+    private final BeanCreator bC = new BeanCreator(this);
+    private AnnotationProcessor annotationProcessor;
 
-    public DefaultApplicationContext() {
+    public DefaultBeanFactory() {
         super();
-        this.name = this.toString();
         List<AnnotationProcessor> annotationProcessors = new ArrayList<>();
         annotationProcessors.add(new BeanAnnotationProcessor(this));
         this.annotationProcessor = new CompositeAnnotationProcessor(
                 annotationProcessors
         );
-        addBean(this);
+    }
+
+    /**
+     * create an instance of a bean factory with a bean added to the beancache
+     */
+    public DefaultBeanFactory(BeanStore instance) {
+        super(instance);
     }
 
     @Override
     protected <T> void createBean(String name, Class<T> clazz) {
-        beanCreator.createBean(name, clazz);
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+        bC.createBean(name, clazz);
     }
 
     @Override

@@ -76,7 +76,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
             Object obj = method.invoke(thisObj, args);
             factory.registerBean(name, obj);
 
-            BeanWrapper<?> beanWrapper = ((AbstractBeanFactory)factory).getBeanCache().get(name);
+            BeanWrapper<?> beanWrapper = ((AbstractBeanFactory)factory).getBeanWrapper(name);
             processBeanAnnotation(annotation, beanWrapper);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanCreationError(e);

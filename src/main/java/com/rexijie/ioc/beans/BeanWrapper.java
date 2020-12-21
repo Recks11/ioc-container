@@ -12,6 +12,8 @@ public class BeanWrapper<T> {
 
     private String name;
     private int numberOfDependencies;
+    private String typename;
+    private Class<?> tClass;
     private T bean;
     private boolean isPrimary;
 
@@ -21,6 +23,8 @@ public class BeanWrapper<T> {
     public BeanWrapper(T bean) {
         this.bean = bean;
         this.name = bean.getClass().getName();
+        this.typename = bean.getClass().getName();
+        this.tClass = bean.getClass();
         calculateNumberOfDependencies();
     }
 
