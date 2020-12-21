@@ -1,8 +1,7 @@
 package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.Named;
-import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.errors.BeanCreationError;
+import com.rexijie.ioc.errors.BeanCreationException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 import org.apache.log4j.Logger;
 
@@ -47,7 +46,7 @@ public class BeanCreator {
         Constructor<?>[] ctorArr = clazz.getConstructors();
         int len = ctorArr.length;
 
-        if (len == 0) throw new BeanCreationError("No declared constructor for class " + clazz);
+        if (len == 0) throw new BeanCreationException("No declared constructor for class " + clazz);
 
         Constructor<?> c = ctorArr[len - 1];
         int pCount = c.getParameterCount();
@@ -91,7 +90,7 @@ public class BeanCreator {
             String name = key != null ? key : c.getDeclaringClass().getName();
             if (beanFactory.containsBean(name)) return;
             if (isInternalType(c.getDeclaringClass()))
-                throw new BeanCreationError("Cannot Automatically create bean from internal class");
+                throw new BeanCreationException("Cannot Automatically create bean from internal class");
 
             executeBeforeCreate();
             T instance = c.newInstance(initArgs);

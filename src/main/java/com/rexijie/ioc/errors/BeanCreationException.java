@@ -4,16 +4,16 @@ package com.rexijie.ioc.errors;
  * Exception thrown when trying to create a new instance of a bean
  * ideally, this exception should never be reached
  */
-public class BeanCreationError extends RuntimeException {
-    public BeanCreationError() {
+public class BeanCreationException extends RuntimeException {
+    public BeanCreationException() {
         super();
     }
 
-    public BeanCreationError(String message) {
+    public BeanCreationException(String message) {
         super(message);
     }
 
-    public BeanCreationError(Throwable cause) {
+    public BeanCreationException(Throwable cause) {
         super(cause);
     }
 }

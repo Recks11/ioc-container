@@ -4,7 +4,7 @@ import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.Bean;
 import com.rexijie.ioc.beans.BeanStore;
 import com.rexijie.ioc.beans.BeanWrapper;
-import com.rexijie.ioc.errors.BeanCreationError;
+import com.rexijie.ioc.errors.BeanCreationException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 
 import java.lang.reflect.InvocationTargetException;
@@ -54,10 +54,10 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         Class<?> returnType = method.getReturnType();
         String packageName = returnType.getPackage().getName();
         if (returnType.isPrimitive())
-            throw new BeanCreationError("Cannot instantiate primitive type");
+            throw new BeanCreationException("Cannot instantiate primitive type");
 
         if (packageName.startsWith("java") | packageName.startsWith("jdk"))
-            throw new BeanCreationError("Cannot Automatically create bean from internal class");
+            throw new BeanCreationException("Cannot Automatically create bean from internal class");
 
         Bean annotation = method.getAnnotation(Bean.class);
         String name = annotation.value().isEmpty() ? method.getName() : annotation.value();
@@ -80,7 +80,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
                 processBeanAnnotation(annotation, beanWrapper);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new BeanCreationError(e);
+            throw new BeanCreationException(e);
         }
     }
 }
