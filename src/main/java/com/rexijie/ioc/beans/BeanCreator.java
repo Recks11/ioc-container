@@ -3,6 +3,7 @@ package com.rexijie.ioc.beans;
 import com.rexijie.ioc.annotations.Named;
 import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
+import com.rexijie.ioc.util.ClassUtils;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Constructor;
@@ -65,6 +66,10 @@ public class BeanCreator {
                     objects[idx] = beanFactory.getBean(name);
 
                 } else {
+                    if (ClassUtils.isInternalType(par.getType())) {
+                        objects[idx] = ClassUtils.getDefaultForPrimitiveType(par.getType());
+                        continue;
+                    }
 
                     if (par.getType().isInterface()) {
                         Class<?> interfaceClass = par.getType();

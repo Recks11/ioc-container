@@ -38,6 +38,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         }
     }
 
+    // This method populates the bean wrapper class with required fields
     protected void processBeanAnnotation(Bean annotation, BeanWrapper<?> beanWrapper) {
         if (annotation.primary()) {
             beanWrapper.setPrimary(true);

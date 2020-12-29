@@ -16,6 +16,7 @@ public class BeanWrapper<T> {
     private Class<?> tClass;
     private T bean;
     private boolean isPrimary;
+    private boolean isInstantiated;
 
     public BeanWrapper() {
     }
@@ -25,6 +26,15 @@ public class BeanWrapper<T> {
         this.name = bean.getClass().getName();
         this.typename = bean.getClass().getName();
         this.tClass = bean.getClass();
+        this.isInstantiated = true;
+        calculateNumberOfDependencies();
+    }
+
+    public BeanWrapper(Class<?> tClass) {
+        this.name = tClass.getName();
+        this.typename = tClass.getName();
+        this.tClass = tClass;
+        this.isInstantiated = false;
         calculateNumberOfDependencies();
     }
 
@@ -42,6 +52,7 @@ public class BeanWrapper<T> {
 
     public void setBean(T bean) {
         this.bean = bean;
+        if (bean != null) this.isInstantiated = true;
         calculateNumberOfDependencies();
     }
 
@@ -55,6 +66,26 @@ public class BeanWrapper<T> {
 
     public int getDependencyCount() {
         return this.numberOfDependencies;
+    }
+
+    public String getTypename() {
+        return typename;
+    }
+
+    public void setTypename(String typename) {
+        this.typename = typename;
+    }
+
+    public Class<?> getClazz() {
+        return tClass;
+    }
+
+    public boolean isInstantiated() {
+        return isInstantiated;
+    }
+
+    public void setInstantiated(boolean instantiated) {
+        isInstantiated = instantiated;
     }
 
     private void calculateNumberOfDependencies() {

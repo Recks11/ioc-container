@@ -2,8 +2,10 @@ package com.rexijie.ioc.context;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
+import com.rexijie.ioc.annotations.processor.ComponentAnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.CompositeAnnotationProcessor;
-import com.rexijie.ioc.beans.*;
+import com.rexijie.ioc.beans.AbstractBeanFactory;
+import com.rexijie.ioc.beans.BeanCreator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,7 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ap
         super();
         this.name = this.toString();
         List<AnnotationProcessor> annotationProcessors = new ArrayList<>();
+        annotationProcessors.add(new ComponentAnnotationProcessor(this));
         annotationProcessors.add(new BeanAnnotationProcessor(this));
         this.annotationProcessor = new CompositeAnnotationProcessor(
                 annotationProcessors
@@ -41,5 +44,10 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ap
     @Override
     public AnnotationProcessor getAnnotationProcessor() {
         return this.annotationProcessor;
+    }
+
+    @Override
+    public void refresh() {
+
     }
 }
