@@ -18,8 +18,14 @@ public class ComponentAnnotationProcessor implements AnnotationProcessor {
             return;
         Class<?> clazz = (Class<?>) annotatedClass;
 
-        if (clazz.isAnnotationPresent(Component.class)) {
-            context.addBean(clazz);
+        if (clazz.isAnnotationPresent(getProcessedAnnotation())) {
+            Component annotation = clazz.getAnnotation(getProcessedAnnotation());
+            String name = annotation.value();
+            context.addBean(name, clazz);
         }
+    }
+
+    public Class<Component> getProcessedAnnotation() {
+        return Component.class;
     }
 }
