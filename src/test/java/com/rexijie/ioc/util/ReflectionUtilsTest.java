@@ -4,6 +4,7 @@ import com.rexijie.ioc.beans.BeanCreator;
 import com.rexijie.ioc.beans.BeanFactory;
 import com.rexijie.ioc.beans.BeanStore;
 import com.rexijie.ioc.beans.DefaultBeanFactory;
+import com.rexijie.mock.Named;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,7 @@ class ReflectionUtilsTest {
             beanCreator.createBean(clazz.getName(), clazz);
         }
 
-        int beanTypesFound = beanFactory.getBeanStore().getBeanTypeMap().size();
+        int beanTypesFound = beanFactory.getBeanStore().getBeanNamesOfType(Named.class).size();
 
         Assertions.assertTrue(beanTypesFound > 0);
     }

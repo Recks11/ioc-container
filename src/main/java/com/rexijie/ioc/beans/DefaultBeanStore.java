@@ -30,7 +30,7 @@ public class DefaultBeanStore implements BeanStore {
         return containsBean(beanClass.getName());
     }
 
-    Set<String> getBeanNamesOfType(Class<?> clazz) {
+    public Set<String> getBeanNamesOfType(Class<?> clazz) {
         return beanTypeMap.get(clazz.getName());
     }
 
@@ -64,6 +64,11 @@ public class DefaultBeanStore implements BeanStore {
         for (Class<?> ifc : allInterfaces) {
             addBeanTypeMapping(ifc, beanName);
         }
+    }
+
+    @Override
+    public BeanWrapper<?> getRawBean(String key) {
+        return beanCache.get(key);
     }
 
     private void addBeanTypeMapping(Class<?> typeName, String beanName) {

@@ -2,8 +2,8 @@ package com.rexijie;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.beans.AbstractBeanFactory;
 import com.rexijie.ioc.beans.BeanFactory;
+import com.rexijie.ioc.beans.DefaultBeanFactory;
 import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.context.DefaultApplicationContext;
 import com.rexijie.ioc.errors.BeanCreationError;
@@ -106,14 +106,12 @@ class BeanContainerTest {
     @Test
     void canCreateBeanFromAnnotatedMethod() {
         DefaultApplicationContext context = new DefaultApplicationContext();
-        AbstractBeanFactory beanFactory = (AbstractBeanFactory) context.getBean(BeanFactory.class);
+        DefaultBeanFactory beanFactory = (DefaultBeanFactory) context.getBean(BeanFactory.class);
 
         context.addBean(InnerBeanClass.class);
 
         assertTrue(context.containsBean("namedBean"));
         assertTrue(context.containsBean("customBean"));
         assertTrue(context.containsBean(Named.class));
-        assertEquals(beanFactory.getBeanStore().getBeanTypeMap().size(), 4);
-        assertEquals(beanFactory.getBeanStore().getBeanTypeMap().get(Named.class.getName()).size(), 2);
     }
 }

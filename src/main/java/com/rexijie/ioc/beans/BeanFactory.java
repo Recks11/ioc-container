@@ -10,8 +10,6 @@ public interface BeanFactory extends BeanStore {
 
     <T> void addBean(String key, T instance);
 
-    <T> void removeBean(Class<T> beanClass);
-
     <T> T getBean(Class<T> clazz);
 
     Object getBean(String name);

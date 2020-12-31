@@ -15,7 +15,8 @@ import java.util.Set;
  * and default methods to add and remove beans
  */
 public abstract class AbstractBeanFactory implements BeanFactory {
-    private DefaultBeanStore beanStore = new DefaultBeanStore();
+    private BeanStore beanStore = new DefaultBeanStore();
+
     /**
      * Creates a bean store with itself as a bean
      */
@@ -27,8 +28,12 @@ public abstract class AbstractBeanFactory implements BeanFactory {
         this.addBean(instance);
     }
 
-    public DefaultBeanStore getBeanStore() {
+    public BeanStore getBeanStore() {
         return beanStore;
+    }
+
+    public void setBeanStore(DefaultBeanStore beanStore) {
+        this.beanStore = beanStore;
     }
 
     public <T> void addBean(T beanInstance) {
@@ -48,9 +53,20 @@ public abstract class AbstractBeanFactory implements BeanFactory {
         registerBean(key, instance);
     }
 
+    public BeanWrapper<?> getBeanWrapper(String name) {
+        return beanStore.getRawBean(name);
+    }
+
     @Override
-    public <T> void removeBean(Class<T> beanClass) {
-        beanStore.removeBean(beanClass);
+    public Object getBean(String name) {
+        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
+
+        return getBeanWrapper(name).getBean();
+    }
+
+    @Override
+    public <T> T getBean(String name, Class<T> clazz) {
+        return clazz.cast(getBean(name));
     }
 
     @Override
@@ -66,7 +82,7 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 
             Optional<String> primaryBeanOptional = beans
                     .stream()
-                    .filter(key -> beanStore.getBeanCache().get(key).isPrimary())
+                    .filter(key -> getBeanWrapper(key).isPrimary())
                     .findFirst();
 
             if (primaryBeanOptional.isPresent()) {
@@ -80,26 +96,10 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     }
 
     @Override
-    public Object getBean(String name) {
-        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
-
-        return beanStore.getBeanCache().get(name).getBean();
+    public Set<String> getBeanNamesOfType(Class<?> clazz) {
+        return beanStore.getBeanNamesOfType(clazz);
     }
 
-    @Override
-    public <T> T getBean(String name, Class<T> clazz) {
-        return clazz.cast(getBean(name));
-    }
-
-    abstract protected <T> void createBean(String name, Class<T> clazz);
-
-    public BeanWrapper<?> getBeanWrapper(String name) {
-        return beanStore.getBeanCache().get(name);
-    }
-
-    public void setBeanStore(DefaultBeanStore beanStore) {
-        this.beanStore = beanStore;
-    }
 
     @Override
     public boolean containsBean(String name) {
@@ -119,7 +119,8 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     @Override
     public <T> void registerBean(String key, T bean) {
         beanStore.registerBean(key, bean);
-        getAnnotationProcessor().processAnnotation(beanStore.getBeanCache().get(key));
+        getAnnotationProcessor()
+                .processAnnotation(getBeanWrapper(key));
     }
 
     @Override
@@ -128,4 +129,6 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     }
 
     public abstract AnnotationProcessor getAnnotationProcessor();
+
+    abstract protected <T> void createBean(String name, Class<T> clazz);
 }

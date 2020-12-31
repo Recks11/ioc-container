@@ -1,6 +1,6 @@
 package com.rexijie.ioc.events;
 
-public interface ApplicationEvent<T> {
+public interface EventListener<T extends Event> {
 
     public void onApplicationEvent(T Event);
 }
