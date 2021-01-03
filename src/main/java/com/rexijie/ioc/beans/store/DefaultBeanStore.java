@@ -1,13 +1,10 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.store;
 
-import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
-import com.rexijie.ioc.errors.NoSuchBeanException;
+import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.util.ClassUtils;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,15 +12,8 @@ public class DefaultBeanStore implements BeanStore {
 
     private final Map<String, BeanWrapper<?>> beanCache = new ConcurrentHashMap<>();
     private final Map<String, Set<String>> beanTypeMap = new ConcurrentHashMap<>();
-    private final BeanAnnotationProcessor beanAnnotationProcessor;
 
     public DefaultBeanStore() {
-        this.beanAnnotationProcessor = new BeanAnnotationProcessor(this);
-    }
-
-    @Override
-    public Map<String, BeanWrapper<?>> getBeanCache() {
-        return beanCache;
     }
 
     @Override
@@ -41,50 +31,11 @@ public class DefaultBeanStore implements BeanStore {
         return containsBean(beanClass.getName());
     }
 
-    @Override
-    public <T> T getBean(Class<T> clazz) {
-        if (clazz.isInterface()) {
-            Set<String> beans = getBeanNamesOfType(clazz);
-            if (beans == null || beans.size() < 1) throw new NoSuchBeanException(clazz);
-            // if there is exactly one bean of this interface type
-            if (beans.size() == 1) {
-                String beanName = beans.iterator().next();
-                return getBean(beanName, clazz);
-            }
-
-            Optional<String> primaryBeanOptional = beans
-                    .stream()
-                    .filter(key -> beanCache.get(key).isPrimary())
-                    .findFirst();
-
-            if (primaryBeanOptional.isPresent()) {
-                return getBean(primaryBeanOptional.get(), clazz);
-            } else {
-                throw new MultipleBeansOfTypeException(clazz);
-            }
-        }
-
-        return getBean(clazz.getName(), clazz);
-    }
-
-    @Override
-    public Object getBean(String name) {
-        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
-
-        return beanCache.get(name).getBean();
-    }
-
-    @Override
-    public <T> T getBean(String name, Class<T> clazz) {
-        return clazz.cast(getBean(name));
-    }
-
-    Set<String> getBeanNamesOfType(Class<?> clazz) {
+    public Set<String> getBeanNamesOfType(Class<?> clazz) {
         return beanTypeMap.get(clazz.getName());
     }
 
-    @Override
-    public <T> void addBean(String key, T bean) {
+    public <T> void registerBean(String key, T bean) {
         synchronized (this.beanCache) {
             if (containsBean(key)) return;
 
@@ -93,9 +44,6 @@ public class DefaultBeanStore implements BeanStore {
 
             beanCache.put(beanWrapper.getName(), beanWrapper);
             addInterfacesToTypeMap(bean.getClass(), beanWrapper.getName());
-
-            beanAnnotationProcessor.processAnnotation(beanWrapper);
-
         }
     }
 
@@ -112,15 +60,16 @@ public class DefaultBeanStore implements BeanStore {
         return beanTypeMap;
     }
 
-    public BeanAnnotationProcessor getBeanAnnotationProcessor() {
-        return beanAnnotationProcessor;
-    }
-
     private <T> void addInterfacesToTypeMap(Class<?> clazz, String beanName) {
         Class<?>[] allInterfaces = ClassUtils.getAllInterfaces(clazz);
         for (Class<?> ifc : allInterfaces) {
             addBeanTypeMapping(ifc, beanName);
         }
+    }
+
+    @Override
+    public BeanWrapper<?> getRawBean(String key) {
+        return beanCache.get(key);
     }
 
     private void addBeanTypeMapping(Class<?> typeName, String beanName) {
@@ -129,5 +78,9 @@ public class DefaultBeanStore implements BeanStore {
             if (!containsBean(key)) beanTypeMap.put(key, new HashSet<>());
             beanTypeMap.get(key).add(beanName);
         }
+    }
+
+    protected Map<String, BeanWrapper<?>> getBeanCache() {
+        return beanCache;
     }
 }

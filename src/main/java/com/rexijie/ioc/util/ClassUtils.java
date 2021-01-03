@@ -4,10 +4,15 @@ import java.util.*;
 
 import static com.rexijie.ioc.util.ObjectUtil.returnIfNull;
 
+interface Executable<T> {
+    T apply();
+}
+
 public class ClassUtils {
     private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[]{};
     private static final Map<Class<?>, Class<?>> jdkWrapperClassMap = new HashMap<>(32);
     private static final Map<Class<?>, Class<?>> jdkPrimitiveTypeMap = new HashMap<>(32);
+    private static final Map<Class<?>, Executable<?>> primitiveDefaults = new HashMap<>(32);
 
     static {
         jdkWrapperClassMap.put(Long.class, long.class);
@@ -25,6 +30,24 @@ public class ClassUtils {
         for (Map.Entry<Class<?>, Class<?>> entry : jdkWrapperClassMap.entrySet()) {
             jdkPrimitiveTypeMap.put(entry.getValue(), entry.getKey());
         }
+
+        primitiveDefaults.put(String.class, () -> "[DEFAULT]");
+        primitiveDefaults.put(long.class, () -> 0L);
+        primitiveDefaults.put(double.class, () -> 0D);
+        primitiveDefaults.put(float.class, () -> 0F);
+        primitiveDefaults.put(int.class, () -> 0);
+        primitiveDefaults.put(byte.class, () -> 0);
+        primitiveDefaults.put(short.class, () -> 0);
+        primitiveDefaults.put(char.class, () -> 'c');
+        primitiveDefaults.put(boolean.class, () -> false);
+    }
+
+    public static Object getDefaultForPrimitiveType(Class<?> clazz) {
+        Class<?> key = clazz;
+        if (jdkWrapperClassMap.containsKey(clazz)) {
+            key = jdkWrapperClassMap.get(clazz);
+        }
+        return primitiveDefaults.get(key).apply();
     }
 
     public static boolean isInternalType(Class<?> clazz) {

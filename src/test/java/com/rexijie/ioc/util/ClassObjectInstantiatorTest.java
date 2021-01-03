@@ -1,7 +1,7 @@
 package com.rexijie.ioc.util;
 
-import com.rexijie.ioc.beans.BeanFactory;
-import com.rexijie.ioc.container.DefaultBeanFactory;
+import com.rexijie.ioc.beans.factory.BeanFactory;
+import com.rexijie.ioc.beans.factory.DefaultBeanFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
