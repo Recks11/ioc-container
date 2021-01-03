@@ -2,11 +2,8 @@ package com.rexijie;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.beans.factory.BeanFactory;
-import com.rexijie.ioc.beans.factory.DefaultBeanFactory;
 import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.context.DefaultApplicationContext;
-import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.mock.*;
 import org.junit.jupiter.api.Assertions;
@@ -73,11 +70,10 @@ class BeanContainerTest {
     }
 
     @Test
-    void throwsErrorWhenBeanCreatedWithJdkProvidedTypeInConstructor() {
+    void canCreateBeanWithJdkProvidedTypeInConstructor() {
         ApplicationContext context = new DefaultApplicationContext();
-        Assertions.assertThrows(BeanCreationError.class,
-                () -> context.addBean(StringParamClass.class),
-                "Bean was created with class from Jdk provided class but was meant to throw error");
+        context.addBean(StringParamClass.class);
+        Assertions.assertNotNull(context.getBean(StringParamClass.class));
     }
 
     @Test
@@ -106,7 +102,6 @@ class BeanContainerTest {
     @Test
     void canCreateBeanFromAnnotatedMethod() {
         DefaultApplicationContext context = new DefaultApplicationContext();
-        DefaultBeanFactory beanFactory = (DefaultBeanFactory) context.getBean(BeanFactory.class);
 
         context.addBean(InnerBeanClass.class);
 
