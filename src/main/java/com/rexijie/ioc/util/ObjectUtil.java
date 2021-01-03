@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ObjectUtil {
-    static final Logger logger = Logger.getLogger(ObjectUtil.class);
+    private static final Logger logger = Logger.getLogger(ObjectUtil.class);
 
     private ObjectUtil() {
     }

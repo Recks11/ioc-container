@@ -1,14 +1,10 @@
 package com.rexijie.ioc.util;
 
 import com.rexijie.ioc.beans.BeanCreator;
-import com.rexijie.ioc.beans.BeanFactory;
-import com.rexijie.ioc.beans.BeanStore;
-import com.rexijie.ioc.beans.DefaultBeanFactory;
+import com.rexijie.ioc.beans.factory.DefaultBeanFactory;
 import com.rexijie.mock.Named;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ReflectionUtilsTest {
 

@@ -1,4 +1,6 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.factory;
+
+import com.rexijie.ioc.beans.store.BeanStore;
 
 public interface BeanFactory extends BeanStore {
 

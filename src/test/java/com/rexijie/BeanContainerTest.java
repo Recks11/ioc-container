@@ -2,8 +2,8 @@ package com.rexijie;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
-import com.rexijie.ioc.beans.BeanFactory;
-import com.rexijie.ioc.beans.DefaultBeanFactory;
+import com.rexijie.ioc.beans.factory.BeanFactory;
+import com.rexijie.ioc.beans.factory.DefaultBeanFactory;
 import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.context.DefaultApplicationContext;
 import com.rexijie.ioc.errors.BeanCreationError;

@@ -1,11 +1,12 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.factory;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
-import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
+import com.rexijie.ioc.beans.store.BeanStore;
+import com.rexijie.ioc.beans.BeanWrapper;
+import com.rexijie.ioc.beans.store.DefaultBeanStore;
 import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 

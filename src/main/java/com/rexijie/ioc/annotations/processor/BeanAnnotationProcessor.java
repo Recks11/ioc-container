@@ -2,8 +2,8 @@ package com.rexijie.ioc.annotations.processor;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.Bean;
-import com.rexijie.ioc.beans.AbstractBeanFactory;
-import com.rexijie.ioc.beans.BeanFactory;
+import com.rexijie.ioc.beans.factory.AbstractBeanFactory;
+import com.rexijie.ioc.beans.factory.BeanFactory;
 import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;

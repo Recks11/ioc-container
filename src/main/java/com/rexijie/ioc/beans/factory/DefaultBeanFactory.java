@@ -1,8 +1,10 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.factory;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.CompositeAnnotationProcessor;
+import com.rexijie.ioc.beans.BeanCreator;
+import com.rexijie.ioc.beans.store.BeanStore;
 
 import java.util.ArrayList;
 import java.util.List;

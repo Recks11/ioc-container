@@ -1,4 +1,6 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.store;
+
+import com.rexijie.ioc.beans.BeanWrapper;
 
 import java.util.Set;
 

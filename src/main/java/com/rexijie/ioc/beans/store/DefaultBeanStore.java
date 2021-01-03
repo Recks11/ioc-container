@@ -1,5 +1,6 @@
-package com.rexijie.ioc.beans;
+package com.rexijie.ioc.beans.store;
 
+import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.util.ClassUtils;
 
 import java.util.HashSet;

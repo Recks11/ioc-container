@@ -1,6 +1,8 @@
 package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.Named;
+import com.rexijie.ioc.beans.factory.BeanFactory;
+import com.rexijie.ioc.beans.store.BeanStore;
 import com.rexijie.ioc.errors.BeanCreationError;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.ioc.util.ClassUtils;
