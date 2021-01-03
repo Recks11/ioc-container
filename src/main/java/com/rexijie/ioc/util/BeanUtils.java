@@ -1,6 +1,6 @@
 package com.rexijie.ioc.util;
 
-import com.rexijie.ioc.errors.BeanCreationError;
+import com.rexijie.ioc.errors.BeanCreationException;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Constructor;
@@ -14,12 +14,12 @@ public class BeanUtils {
             T tInstance = instantiateBean(clazz);
             return type.cast(tInstance);
         }
-        throw new BeanCreationError("Expected bean type "+ type.getName() +
+        throw new BeanCreationException("Expected bean type "+ type.getName() +
                 "is not assignable to provided type "+ clazz.getName());
     }
     public static <T> T instantiateBean(Class<T> clazz) {
         if (clazz.isInterface()) {
-            throw new BeanCreationError("cannot instantiate interface");
+            throw new BeanCreationException("cannot instantiate interface");
         }
         Constructor<?> primaryConstructor = findPrimaryConstructor(clazz);
         Object instance = instantiateClass(primaryConstructor);
@@ -32,7 +32,7 @@ public class BeanUtils {
         } catch (NoSuchMethodException ex) {
             Constructor<?>[] ctorArr = clazz.getConstructors();
             int constructorArrayLength = ctorArr.length;
-            if (constructorArrayLength == 0) throw new BeanCreationError("No declared constructor for class " + clazz);
+            if (constructorArrayLength == 0) throw new BeanCreationException("No declared constructor for class " + clazz);
 
             Constructor<?> c = ctorArr[constructorArrayLength - 1];
             return c;
