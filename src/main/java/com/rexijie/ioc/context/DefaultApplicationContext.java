@@ -7,6 +7,8 @@ import com.rexijie.ioc.annotations.processor.CompositeAnnotationProcessor;
 import com.rexijie.ioc.beans.factory.AbstractBeanFactory;
 import com.rexijie.ioc.beans.BeanCreator;
 import com.rexijie.ioc.beans.factory.BeanFactory;
+import com.rexijie.ioc.environment.ApplicationEnvironment;
+import com.rexijie.ioc.environment.Environment;
 import com.rexijie.ioc.environment.EnvironmentVariableStore;
 import com.rexijie.ioc.environment.InMemoryEnvironmentStore;
 
@@ -18,10 +20,12 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ed
     private final BeanCreator beanCreator = new BeanCreator(this);
     private final AnnotationProcessor annotationProcessor;
     private EnvironmentVariableStore envVars;
+    private Environment environment;
 
     public DefaultApplicationContext() {
         super();
         this.name = this.toString();
+        this.environment = new ApplicationEnvironment();
         List<AnnotationProcessor> annotationProcessors = new ArrayList<>();
         annotationProcessors.add(new ComponentAnnotationProcessor(this));
         annotationProcessors.add(new BeanAnnotationProcessor(this));
@@ -46,31 +50,23 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ed
         this.name = name;
     }
 
-    @Override
-    public String getValue(String key) {
-        return this.envVars.getValue(key);
-    }
-
-    @Override
-    public void setValue(String key, String value) {
-        this.envVars.setValue(key, value);
-    }
-
     public BeanFactory getFactory() {
         return this;
     }
-
-    public EnvironmentVariableStore getEnvVars() {
-        return envVars;
-    }
-
-    public void setEnvVars(EnvironmentVariableStore envVars) {
-        this.envVars = envVars;
-    }
-
     @Override
     public AnnotationProcessor getAnnotationProcessor() {
         return this.annotationProcessor;
+    }
+
+    @Override
+    public Environment getEnvironment() {
+        return this.environment;
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+        refresh();
     }
 
     /**
