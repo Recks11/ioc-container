@@ -104,6 +104,7 @@ class BeanContainerTest {
         DefaultApplicationContext context = new DefaultApplicationContext();
 
         context.addBean(InnerBeanClass.class);
+        context.refresh();
 
         assertTrue(context.containsBean("namedBean"));
         assertTrue(context.containsBean("customBean"));

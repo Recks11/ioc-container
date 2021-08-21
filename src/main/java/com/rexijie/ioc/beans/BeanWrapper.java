@@ -1,6 +1,7 @@
 package com.rexijie.ioc.beans;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 /**
  * wrapper class to hold bean objects in the bean store
@@ -14,6 +15,7 @@ public class BeanWrapper<T> {
     private int numberOfDependencies;
     private String typename;
     private Class<?> tClass;
+    private Method[] methods;
     private T bean;
     private boolean isPrimary;
     private boolean isInstantiated;
@@ -26,6 +28,7 @@ public class BeanWrapper<T> {
         this.name = bean.getClass().getName();
         this.typename = bean.getClass().getName();
         this.tClass = bean.getClass();
+        this.methods = bean.getClass().getDeclaredMethods();
         this.isInstantiated = true;
         calculateNumberOfDependencies();
     }
@@ -34,8 +37,20 @@ public class BeanWrapper<T> {
         this.name = tClass.getName();
         this.typename = tClass.getName();
         this.tClass = tClass;
+        this.methods = tClass.getDeclaredMethods();
         this.isInstantiated = false;
         calculateNumberOfDependencies();
+    }
+
+    public BeanWrapper(BeanWrapper<T> other) {
+        this.name = other.name;
+        this.bean = other.getBean();
+        this.typename = other.typename;
+        this.tClass = other.tClass;
+        this.methods = other.methods;
+        this.isInstantiated = other.isInstantiated;
+        this.isPrimary = other.isPrimary;
+        this.numberOfDependencies = other.numberOfDependencies;
     }
 
     public String getName() {
@@ -78,6 +93,10 @@ public class BeanWrapper<T> {
 
     public Class<?> getClazz() {
         return tClass;
+    }
+
+    public Method[] getMethods() {
+        return methods;
     }
 
     public boolean isInstantiated() {

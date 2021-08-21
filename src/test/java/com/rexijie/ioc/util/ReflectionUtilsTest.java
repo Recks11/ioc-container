@@ -11,7 +11,7 @@ class ReflectionUtilsTest {
     @Test
     void findClassesInPackage() {
         DefaultBeanFactory beanFactory = new DefaultBeanFactory();
-        BeanCreator beanCreator = new BeanCreator(beanFactory);
+        BeanCreator beanCreator = BeanCreator.withFactory(beanFactory);
 
         Class<?>[] classesInPackage = ReflectionUtils.findClassesInPackage("com.rexijie.mock");
         for (Class<?> clazz: classesInPackage) {

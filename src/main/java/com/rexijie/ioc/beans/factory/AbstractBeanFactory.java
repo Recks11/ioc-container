@@ -6,6 +6,7 @@ import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.beans.store.DefaultBeanStore;
 import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
+import org.apache.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
@@ -16,6 +17,7 @@ import java.util.Set;
  * and default methods to add and remove beans
  */
 public abstract class AbstractBeanFactory implements BeanFactory {
+    private static final Logger LOG = Logger.getLogger(AbstractBeanFactory.class);
     private BeanStore beanStore = new DefaultBeanStore();
 
     /**
@@ -39,6 +41,7 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 
     public <T> void addBean(T beanInstance) {
         registerBean(beanInstance.getClass().getName(), beanInstance);
+        LOG.info("Added Bean: "+ beanInstance.getClass().getName());
     }
 
     public <T> void addBean(Class<T> clazz) {
@@ -120,8 +123,6 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     @Override
     public <T> void registerBean(String key, T bean) {
         beanStore.registerBean(key, bean);
-        getAnnotationProcessor()
-                .processAnnotation(getBeanWrapper(key));
     }
 
     @Override

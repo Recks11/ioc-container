@@ -4,22 +4,25 @@ import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.ComponentAnnotationProcessor;
 import com.rexijie.ioc.annotations.processor.CompositeAnnotationProcessor;
-import com.rexijie.ioc.beans.factory.AbstractBeanFactory;
 import com.rexijie.ioc.beans.BeanCreator;
+import com.rexijie.ioc.beans.BeanWrapper;
+import com.rexijie.ioc.beans.factory.AbstractBeanFactory;
 import com.rexijie.ioc.beans.factory.BeanFactory;
+import com.rexijie.ioc.beans.store.DefaultBeanStore;
 import com.rexijie.ioc.environment.ApplicationEnvironment;
 import com.rexijie.ioc.environment.Environment;
-import com.rexijie.ioc.environment.EnvironmentVariableStore;
-import com.rexijie.ioc.environment.InMemoryEnvironmentStore;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class DefaultApplicationContext extends AbstractBeanFactory implements EditableApplicationContext {
+public class DefaultApplicationContext extends AbstractBeanFactory implements ConfigurableApplicationContext {
+    private static Logger LOG = Logger.getLogger(DefaultApplicationContext.class);
     private String name;
-    private final BeanCreator beanCreator = new BeanCreator(this);
+    private final BeanCreator beanCreator = BeanCreator.withFactory(this);
     private final AnnotationProcessor annotationProcessor;
-    private EnvironmentVariableStore envVars;
     private Environment environment;
 
     public DefaultApplicationContext() {
@@ -33,7 +36,6 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ed
                 annotationProcessors
         );
         addBean(this);
-        this.envVars = new InMemoryEnvironmentStore();
     }
 
     @Override
@@ -74,7 +76,14 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Ed
      */
     @Override
     public void refresh() {
-
+        DefaultBeanStore store = (DefaultBeanStore) getBeanStore();
+        Map<String, BeanWrapper<?>> storeCopy = new HashMap<>(store.getBeanCache());
+        store.getBeanCache().clear();
+        store.getBeanTypeMap().clear();
+        storeCopy.values().forEach(beanWrapper -> {
+            getAnnotationProcessor().processAnnotation(beanWrapper);
+            store.addBean(beanWrapper);
+        });
     }
 
     public void close() {

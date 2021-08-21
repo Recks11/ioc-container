@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultBeanFactory extends AbstractBeanFactory {
-    private final BeanCreator bC = new BeanCreator(this);
+    private final BeanCreator bC = BeanCreator.withFactory(this);
     private AnnotationProcessor annotationProcessor;
 
     public DefaultBeanFactory() {

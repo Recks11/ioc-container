@@ -2,6 +2,7 @@ package com.rexijie.ioc.beans.store;
 
 import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.util.ClassUtils;
+import org.apache.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -9,9 +10,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultBeanStore implements BeanStore {
-
+    private static final Logger LOG = Logger.getLogger(DefaultBeanStore.class);
     private final Map<String, BeanWrapper<?>> beanCache = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> beanTypeMap = new ConcurrentHashMap<>();
+    private final Map<String, BeanDefinitionSet<String>> beanTypeMap = new ConcurrentHashMap<>();
 
     public DefaultBeanStore() {
     }
@@ -35,15 +36,23 @@ public class DefaultBeanStore implements BeanStore {
         return beanTypeMap.get(clazz.getName());
     }
 
+    public synchronized <T> void addBean(BeanWrapper<?> beanWrapper) {
+        addInterfacesToTypeMap(beanWrapper.getClazz(), beanWrapper);
+        beanCache.put(beanWrapper.getName(), beanWrapper);
+    }
+
     public <T> void registerBean(String key, T bean) {
+        LOG.debug("Registering Bean " + key);
         synchronized (this.beanCache) {
             if (containsBean(key)) return;
 
+            if (bean instanceof BeanWrapper) {
+                addBean((BeanWrapper<?>) bean);
+                return;
+            }
             BeanWrapper<T> beanWrapper = new BeanWrapper<>(bean);
             if (key != null && !key.isEmpty()) beanWrapper.setName(key);
-
-            beanCache.put(beanWrapper.getName(), beanWrapper);
-            addInterfacesToTypeMap(bean.getClass(), beanWrapper.getName());
+            addBean(beanWrapper);
         }
     }
 
@@ -56,14 +65,18 @@ public class DefaultBeanStore implements BeanStore {
         removeBean(name);
     }
 
-    public Map<String, Set<String>> getBeanTypeMap() {
+    public Map<String, BeanDefinitionSet<String>> getBeanTypeMap() {
         return beanTypeMap;
     }
 
-    private <T> void addInterfacesToTypeMap(Class<?> clazz, String beanName) {
+    public BeanDefinitionSet<String> getBeanTypeDetails(String key) {
+        return getBeanTypeMap().get(key);
+    }
+
+    private <T> void addInterfacesToTypeMap(Class<?> clazz, BeanWrapper<?> beanWrapper) {
         Class<?>[] allInterfaces = ClassUtils.getAllInterfaces(clazz);
         for (Class<?> ifc : allInterfaces) {
-            addBeanTypeMapping(ifc, beanName);
+            addBeanTypeMapping(ifc, beanWrapper);
         }
     }
 
@@ -72,15 +85,15 @@ public class DefaultBeanStore implements BeanStore {
         return beanCache.get(key);
     }
 
-    private void addBeanTypeMapping(Class<?> typeName, String beanName) {
-        String key = typeName.getName();
-        synchronized (this.beanTypeMap) {
-            if (!containsBean(key)) beanTypeMap.put(key, new HashSet<>());
-            beanTypeMap.get(key).add(beanName);
+    private void addBeanTypeMapping(Class<?> type, BeanWrapper<?> beanWrapper) {
+        String key = type.getName();
+        synchronized (beanTypeMap) {
+            if (!containsBean(key)) beanTypeMap.put(key, new BeanDefinitionSet<>());
+            getBeanTypeDetails(key).add(beanWrapper.getName(), beanWrapper);
         }
     }
 
-    protected Map<String, BeanWrapper<?>> getBeanCache() {
+    public Map<String, BeanWrapper<?>> getBeanCache() {
         return beanCache;
     }
 }

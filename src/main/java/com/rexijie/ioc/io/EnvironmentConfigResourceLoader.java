@@ -26,7 +26,7 @@ public class EnvironmentConfigResourceLoader implements ResourceLoader {
                 URI uri = getBaseURL().toURI();
                 File base = new File(uri);
                 List<File> files = ResourceUtils.loadFilesWithExtension(base, ".properties");
-
+                return new ClassPathResource(files.get(0).toURI());
             } catch (URISyntaxException e) {
                 e.printStackTrace();
             }

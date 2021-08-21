@@ -34,7 +34,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
 
         for (Method method : beanWrapper.getBean().getClass().getDeclaredMethods()) {
             if (method.isAnnotationPresent(Bean.class))
-                processBeanMethodAnnotation(method, beanWrapper.getBean());
+                processBeanMethodAnnotation(method, beanWrapper);
         }
     }
 
@@ -52,7 +52,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         }
     }
 
-    protected void processBeanMethodAnnotation(Method method, Object thisObj) {
+    protected void processBeanMethodAnnotation(Method method, BeanWrapper<?> beanWrapper) {
         Class<?> returnType = method.getReturnType();
         String packageName = returnType.getPackage().getName();
         if (returnType.isPrimitive())
@@ -74,11 +74,12 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
         }
 
         try {
-            Object obj = method.invoke(thisObj, args);
-            factory.registerBean(name, obj);
+            Object obj = method.invoke(beanWrapper.getBean(), args);
+            BeanWrapper<?> bw = new BeanWrapper<>(obj);
+            bw.setName(name);
+            processBeanAnnotation(annotation, bw);
 
-            BeanWrapper<?> beanWrapper = ((AbstractBeanFactory)factory).getBeanWrapper(name);
-            processBeanAnnotation(annotation, beanWrapper);
+            factory.registerBean(name, bw);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanCreationException(e);
         }
