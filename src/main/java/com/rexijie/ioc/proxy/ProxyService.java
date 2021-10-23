@@ -19,6 +19,6 @@ public class ProxyService {
     }
 
     private static Class<?>[] getInterfacesForClass(Class<?> clazz) {
-        return ClassUtils.getAllInterfaces(clazz);
+        return ClassUtils.getAllInterfaces(clazz, false);
     }
 }

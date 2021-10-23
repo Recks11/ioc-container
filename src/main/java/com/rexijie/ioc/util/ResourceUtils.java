@@ -12,6 +12,7 @@ public class ResourceUtils {
 
 
     public static String classPathRelative(String path) {
+        if (path.startsWith("/")) path = path.substring(1);
         return CLASSPATH_URL_PREFIX + "/" + path;
     }
     public static List<File> findDirectories(File baseDir) {

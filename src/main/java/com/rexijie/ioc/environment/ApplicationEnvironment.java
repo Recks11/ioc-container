@@ -1,6 +1,7 @@
 package com.rexijie.ioc.environment;
 
 import com.rexijie.ioc.io.*;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,11 +10,13 @@ import java.util.List;
 import static com.rexijie.ioc.util.ResourceUtils.classPathRelative;
 
 public class ApplicationEnvironment implements Environment {
+    private static final Logger LOG = Logger.getLogger(ApplicationEnvironment.class);
     private final EnvironmentVariableStore envStore;
     private final Object sync = new Object();
     private final List<ResourceProcessor<?>> resourceProcessors = new ArrayList<>();
 
     public ApplicationEnvironment() {
+        LOG.debug("creating application environment");
         this.envStore = new InMemoryEnvironmentStore();
         initDefaultProcessors();
         loadSystemEnvironment();
@@ -34,9 +37,10 @@ public class ApplicationEnvironment implements Environment {
     }
 
     private void loadPropertiesFiles() {
+        LOG.debug("loading properties files");
         ResourceLoader rl = new EnvironmentConfigResourceLoader();
 
-        List<Resource> resources = rl.loadResources(classPathRelative(""), ".properties");
+        List<Resource> resources = rl.loadResources(classPathRelative("/"), ".properties");
 
         resources.forEach(resource ->
                 resourceProcessors.forEach(resourceProcessor -> resourceProcessor.process(resource)));
@@ -78,6 +82,7 @@ public class ApplicationEnvironment implements Environment {
     @Override
     public void clear() {
         synchronized (sync) {
+            envStore.clear();
         }
     }
 }

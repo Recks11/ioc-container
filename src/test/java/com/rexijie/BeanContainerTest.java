@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,7 +33,7 @@ class BeanContainerTest {
     @Test
     void canCreateBeanWithNoConstructorParam() {
         ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(NoParam.class);
+        context.addBean(new NoParam());
         NoParam obj = context.getBean(NoParam.class);
         assertNotNull(obj);
     }
@@ -40,22 +41,12 @@ class BeanContainerTest {
     @Test
     void canCreateBeanWithOneConstructorParam() {
         ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(OneParam.class);
+        context.addBean(new OneParam(new NoParam()));
         OneParam obj = context.getBean(OneParam.class);
         assertNotNull(obj);
         assertNotNull(obj.getNoParam());
     }
 
-    @Test
-    void canCreateBeanWithManyConstructorParam() {
-        ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(TwoParam.class);
-        TwoParam obj = context.getBean(TwoParam.class);
-        assertNotNull(obj);
-        assertNotNull(obj.getNoParam());
-        assertNotNull(obj.getOneParam());
-        assertNotNull(obj.getOneParam().getNoParam());
-    }
 
     @Test
     void throwsErrorIfNoBeanOfTypeInterfaceExists() {
@@ -70,21 +61,14 @@ class BeanContainerTest {
     }
 
     @Test
-    void canCreateBeanWithJdkProvidedTypeInConstructor() {
+    void canCreateBeanWithProvidedConstructorBean() {
         ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(StringParamClass.class);
-        Assertions.assertNotNull(context.getBean(StringParamClass.class));
-    }
-
-    @Test
-    void canCreateBeanWithInterfaceInConstructor() {
-        ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(NamedClass.class);
-        context.addBean(OneInterfaceParam.class);
-
-        OneInterfaceParam bean = context.getBean(OneInterfaceParam.class);
-
+        context.addBean(new NoParam());
+        context.addBean(OneParam.class.getName(), OneParam.class);
+        OneParam bean = context.getBean(OneParam.class);
         assertNotNull(bean);
+
+        assertThrows(NoSuchBeanException.class, () -> context.addBean("TP", OneInterfaceParam.class));
     }
 
     @Test
@@ -93,7 +77,7 @@ class BeanContainerTest {
         Class<?> annotationProcessorClass = classLoader.loadClass("com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor");
 
         ApplicationContext context = new DefaultApplicationContext();
-        context.addBean(annotationProcessorClass);
+        context.addBean("com.rexijie.ioc.annotations.processor.BeanAnnotationProcessor", annotationProcessorClass);
         AnnotationProcessor annotationProcessor = context.getBean(AnnotationProcessor.class);
 
         assertTrue(annotationProcessor instanceof BeanAnnotationProcessor);
@@ -103,11 +87,29 @@ class BeanContainerTest {
     void canCreateBeanFromAnnotatedMethod() {
         DefaultApplicationContext context = new DefaultApplicationContext();
 
-        context.addBean(InnerBeanClass.class);
+        context.addBean(new InnerBeanClass());
         context.refresh();
 
         assertTrue(context.containsBean("namedBean"));
         assertTrue(context.containsBean("customBean"));
         assertTrue(context.containsBean(Named.class));
+    }
+
+    @Test
+    void whenRemoveBeanRemoveTypes() {
+        DefaultApplicationContext context = new DefaultApplicationContext();
+        context.addBean(new InnerBeanClass());
+        context.refresh();
+
+        assertTrue(context.containsBean("namedBean"));
+        assertTrue(context.containsBean("customBean"));
+        assertTrue(context.containsBean(Named.class));
+
+        context.removeBean("namedBean");
+        Set<String> beanNamesOfType = context.getBeanNamesOfType(Named.class);
+        Set<String> beanNamesOfTypeNamedClass = context.getBeanNamesOfType(NamedClass.class);
+
+        assertEquals(1, beanNamesOfType.size());
+        assertEquals(1, beanNamesOfTypeNamedClass.size());
     }
 }

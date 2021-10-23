@@ -20,37 +20,7 @@ public class BeanWrapper<T> {
     private boolean isPrimary;
     private boolean isInstantiated;
 
-    public BeanWrapper() {
-    }
-
-    public BeanWrapper(T bean) {
-        this.bean = bean;
-        this.name = bean.getClass().getName();
-        this.typename = bean.getClass().getName();
-        this.tClass = bean.getClass();
-        this.methods = bean.getClass().getDeclaredMethods();
-        this.isInstantiated = true;
-        calculateNumberOfDependencies();
-    }
-
-    public BeanWrapper(Class<?> tClass) {
-        this.name = tClass.getName();
-        this.typename = tClass.getName();
-        this.tClass = tClass;
-        this.methods = tClass.getDeclaredMethods();
-        this.isInstantiated = false;
-        calculateNumberOfDependencies();
-    }
-
-    public BeanWrapper(BeanWrapper<T> other) {
-        this.name = other.name;
-        this.bean = other.getBean();
-        this.typename = other.typename;
-        this.tClass = other.tClass;
-        this.methods = other.methods;
-        this.isInstantiated = other.isInstantiated;
-        this.isPrimary = other.isPrimary;
-        this.numberOfDependencies = other.numberOfDependencies;
+    private BeanWrapper() {
     }
 
     public String getName() {
@@ -66,9 +36,9 @@ public class BeanWrapper<T> {
     }
 
     public void setBean(T bean) {
+        if (!tClass.isInstance(bean)) throw new RuntimeException("supplied bean not instance of definition class");
         this.bean = bean;
-        if (bean != null) this.isInstantiated = true;
-        calculateNumberOfDependencies();
+        this.isInstantiated = true;
     }
 
     public boolean isPrimary() {
@@ -108,7 +78,7 @@ public class BeanWrapper<T> {
     }
 
     private void calculateNumberOfDependencies() {
-        Constructor<?>[] constructors = bean.getClass().getConstructors();
+        Constructor<?>[] constructors = getClazz().getConstructors();
         int paramCount = 0;
         int lastParamCount;
 
@@ -119,5 +89,45 @@ public class BeanWrapper<T> {
         }
 
         numberOfDependencies = paramCount;
+    }
+
+    public static <T> BeanWrapper<T> create() {
+        return new BeanWrapper<>();
+    }
+
+    public static <T> BeanWrapper<T> forInstance(T bean) {
+        BeanWrapper<T> wrapper = new BeanWrapper<>();
+        wrapper.bean = bean;
+        wrapper.name = bean.getClass().getName();
+        wrapper.typename = bean.getClass().getName();
+        wrapper.tClass = bean.getClass();
+        wrapper.methods = bean.getClass().getDeclaredMethods();
+        wrapper.isInstantiated = true;
+        wrapper.calculateNumberOfDependencies();
+        return wrapper;
+    }
+
+    public static <T> BeanWrapper<T> fromWrapper(BeanWrapper<T> other) {
+        BeanWrapper<T> wrapper = BeanWrapper.create();
+        wrapper.name = other.name;
+        wrapper.bean = other.getBean();
+        wrapper.typename = other.typename;
+        wrapper.tClass = other.tClass;
+        wrapper.methods = other.methods;
+        wrapper.isInstantiated = other.isInstantiated;
+        wrapper.isPrimary = other.isPrimary;
+        wrapper.numberOfDependencies = other.numberOfDependencies;
+        return wrapper;
+    }
+
+    public static <T> BeanWrapper<T> forClass(Class<?> tClass) {
+        BeanWrapper<T> wrapper = BeanWrapper.create();
+        wrapper.name = tClass.getName();
+        wrapper.typename = tClass.getName();
+        wrapper.tClass = tClass;
+        wrapper.methods = tClass.getDeclaredMethods();
+        wrapper.isInstantiated = false;
+        wrapper.calculateNumberOfDependencies();
+        return wrapper;
     }
 }

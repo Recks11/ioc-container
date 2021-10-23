@@ -1,10 +1,11 @@
 package com.rexijie.ioc.beans.store;
 
 import com.rexijie.ioc.beans.BeanWrapper;
+import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
+import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.ioc.util.ClassUtils;
 import org.apache.log4j.Logger;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,33 +37,64 @@ public class DefaultBeanStore implements BeanStore {
         return beanTypeMap.get(clazz.getName());
     }
 
-    public synchronized <T> void addBean(BeanWrapper<?> beanWrapper) {
+    public synchronized void addBean(BeanWrapper<?> beanWrapper) {
         addInterfacesToTypeMap(beanWrapper.getClazz(), beanWrapper);
+        addBeanTypeMapping(beanWrapper.getClazz(), beanWrapper);
         beanCache.put(beanWrapper.getName(), beanWrapper);
     }
 
     public <T> void registerBean(String key, T bean) {
         LOG.debug("Registering Bean " + key);
-        synchronized (this.beanCache) {
-            if (containsBean(key)) return;
+        registerBeanInstance(key, bean);
+    }
 
-            if (bean instanceof BeanWrapper) {
-                addBean((BeanWrapper<?>) bean);
-                return;
-            }
-            BeanWrapper<T> beanWrapper = new BeanWrapper<>(bean);
-            if (key != null && !key.isEmpty()) beanWrapper.setName(key);
-            addBean(beanWrapper);
+    @Override
+    public <T> void addBean(T beanInstance) {
+        if (beanInstance instanceof Class) {
+            Class<?> bClass = (Class<?>) beanInstance;
+            if (bClass.isInterface()) return; // TODO thorw error
+            addBean(bClass.getName(), bClass);
+            return;
         }
+        registerBeanInstance(beanInstance.getClass().getName(), beanInstance);
+        LOG.info("Added Bean: " + beanInstance.getClass().getName());
+    }
+
+    @Override
+    public <T> void addBean(String key, Class<T> clazz) {
+        registerBeanClass(key, clazz);
+    }
+
+    @Override
+    public <T> void addBean(String key, T instance) {
+        registerBeanInstance(key, instance);
     }
 
     public void removeBean(String key) {
-        beanCache.remove(key);
+        BeanWrapper<?> remove = beanCache.remove(key);
+        if (remove != null && beanTypeMap.containsKey(remove.getClazz().getName())) {
+            BeanDefinitionSet<String> beanNames;
+
+            String className = remove.getClazz().getName();
+            beanNames = beanTypeMap.get(className);
+            beanNames.remove(key);
+            if (beanNames.size() == 0) beanTypeMap.remove(className);
+
+            for (Class<?> cls : ClassUtils.getAllInterfaces(remove.getClazz(), false)) {
+                beanNames = beanTypeMap.get(cls.getName());
+                beanNames.remove(key);
+                if (beanNames.size() == 0) beanTypeMap.remove(cls.getName());
+            }
+        }
     }
 
     public <T> void removeBean(Class<T> beanClass) {
-        String name = beanClass.getName();
-        removeBean(name);
+        String name = resolveNameForBeanClass(beanClass);
+        if (beanTypeMap.containsKey(name)) {
+            beanTypeMap.get(name)
+                    .forEach(beanTypeMap::remove);
+            beanTypeMap.remove(name);
+        }
     }
 
     public Map<String, BeanDefinitionSet<String>> getBeanTypeMap() {
@@ -74,7 +106,7 @@ public class DefaultBeanStore implements BeanStore {
     }
 
     private <T> void addInterfacesToTypeMap(Class<?> clazz, BeanWrapper<?> beanWrapper) {
-        Class<?>[] allInterfaces = ClassUtils.getAllInterfaces(clazz);
+        Class<?>[] allInterfaces = ClassUtils.getAllInterfaces(clazz, false);
         for (Class<?> ifc : allInterfaces) {
             addBeanTypeMapping(ifc, beanWrapper);
         }
@@ -82,11 +114,19 @@ public class DefaultBeanStore implements BeanStore {
 
     @Override
     public BeanWrapper<?> getRawBean(String key) {
-        return beanCache.get(key);
+        LOG.debug("retrieving bean " + key);
+        if (beanCache.containsKey(key)) return beanCache.get(key);
+        if (!beanTypeMap.containsKey(key))
+            throw new NoSuchBeanException("no bean named " + key + " exists in the beanstore");
+
+        BeanDefinitionSet<String> strings = beanTypeMap.get(key);
+        if (strings.size() == 1) return beanCache.get(strings.iterator().next());
+        if (strings.isPrimaryBeanSet()) return beanCache.get(strings.getPrimaryBean().toString());
+        throw new MultipleBeansOfTypeException(key);
     }
 
     private void addBeanTypeMapping(Class<?> type, BeanWrapper<?> beanWrapper) {
-        String key = type.getName();
+        String key = resolveNameForBeanClass(type);
         synchronized (beanTypeMap) {
             if (!containsBean(key)) beanTypeMap.put(key, new BeanDefinitionSet<>());
             getBeanTypeDetails(key).add(beanWrapper.getName(), beanWrapper);
@@ -95,5 +135,34 @@ public class DefaultBeanStore implements BeanStore {
 
     public Map<String, BeanWrapper<?>> getBeanCache() {
         return beanCache;
+    }
+
+    private <T> void registerBeanInstance(String key, T bean) {
+        LOG.debug("Registering Bean " + key);
+        synchronized (this.beanCache) {
+            BeanWrapper<T> beanWrapper = BeanWrapper.forInstance(bean);
+            if (key != null && !key.isEmpty()) beanWrapper.setName(key);
+            addBean(beanWrapper);
+        }
+    }
+
+    private <T> void registerBeanClass(String key, Class<T> beanClass) {
+        LOG.debug("Registering Bean class" + key);
+        synchronized (this.beanCache) {
+            BeanWrapper<T> beanWrapper = BeanWrapper.forClass(beanClass);
+            if (key != null && !key.isEmpty()) beanWrapper.setName(key);
+            addBean(beanWrapper);
+        }
+    }
+
+    private <T> void registerBeanWrapper(String key, BeanWrapper<T> bean) {
+        LOG.debug("Registering Bean wrapper" + key);
+        synchronized (this.beanCache) {
+            addBean(bean);
+        }
+    }
+
+    private String resolveNameForBeanClass(Class<?> clazz) {
+        return clazz.getName();
     }
 }

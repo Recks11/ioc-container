@@ -13,20 +13,18 @@ import com.rexijie.ioc.environment.ApplicationEnvironment;
 import com.rexijie.ioc.environment.Environment;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DefaultApplicationContext extends AbstractBeanFactory implements ConfigurableApplicationContext {
     private static Logger LOG = Logger.getLogger(DefaultApplicationContext.class);
     private String name;
-    private final BeanCreator beanCreator = BeanCreator.withFactory(this);
+    private final BeanCreator beanCreator = BeanCreator.withContext(this);
     private final AnnotationProcessor annotationProcessor;
     private Environment environment;
 
     public DefaultApplicationContext() {
         super();
+        LOG.debug("initializing Application context");
         this.name = this.toString();
         this.environment = new ApplicationEnvironment();
         List<AnnotationProcessor> annotationProcessors = new ArrayList<>();
@@ -35,7 +33,7 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Co
         this.annotationProcessor = new CompositeAnnotationProcessor(
                 annotationProcessors
         );
-        addBean(this);
+        getBeanStore().addBean(this);
     }
 
     @Override
@@ -76,6 +74,7 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Co
      */
     @Override
     public void refresh() {
+        LOG.debug("refreshing application context");
         DefaultBeanStore store = (DefaultBeanStore) getBeanStore();
         Map<String, BeanWrapper<?>> storeCopy = new HashMap<>(store.getBeanCache());
         store.getBeanCache().clear();
@@ -88,5 +87,55 @@ public class DefaultApplicationContext extends AbstractBeanFactory implements Co
 
     public void close() {
 
+    }
+
+    @Override
+    public boolean containsBean(String name) {
+        return getBeanStore().containsBean(name);
+    }
+
+    @Override
+    public <T> boolean containsBean(T beanInstance) {
+        return getBeanStore().containsBean(beanInstance);
+    }
+
+    @Override
+    public <T> boolean containsBean(Class<T> beanClass) {
+        return getBeanStore().containsBean(beanClass);
+    }
+
+    @Override
+    public <T> void addBean(T beanInstance) {
+        getBeanStore().addBean(beanInstance);
+    }
+
+    /**
+     * Create a bean and add it to the context while providing stored beans
+     * as constructor parameters.
+     */
+    @Override
+    public <T> void addBean(String key, Class<T> clazz) {
+        BeanWrapper<?> instance = beanCreator.createBean(key, clazz);
+        getBeanStore().addBean(instance);
+    }
+
+    @Override
+    public <T> void addBean(String key, T instance) {
+        getBeanStore().addBean(key, instance);
+    }
+
+    @Override
+    public void addBean(BeanWrapper<?> beanWrapper) {
+        getBeanStore().addBean(beanWrapper);
+    }
+
+    @Override
+    public Set<String> getBeanNamesOfType(Class<?> clazz) {
+        return getBeanStore().getBeanNamesOfType(clazz);
+    }
+
+    @Override
+    public void removeBean(String key) {
+        getBeanStore().removeBean(key);
     }
 }

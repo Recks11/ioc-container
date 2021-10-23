@@ -9,6 +9,7 @@ interface Executable<T> {
 }
 
 public class ClassUtils {
+    private static final String JAVA_PACKAGE_NAME = "java.";
     private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[]{};
     private static final Map<Class<?>, Class<?>> jdkWrapperClassMap = new HashMap<>(32);
     private static final Map<Class<?>, Class<?>> jdkPrimitiveTypeMap = new HashMap<>(32);
@@ -55,32 +56,35 @@ public class ClassUtils {
         return jdkWrapperClassMap.containsKey(clazz) || jdkPrimitiveTypeMap.containsKey(clazz) || (packageName.startsWith("java") | packageName.startsWith("jdk"));
     }
 
-    public static Class<?>[] getAllInterfaces(Class<?> clazz) {
+    public static Class<?>[] getAllInterfaces(Class<?> clazz, boolean includeJavaInterfaces) {
         Set<Class<?>> interfaces = new HashSet<>();
 
-        for (Class<?> ifc : getParentInterfaceForClass(clazz)) {
+        for (Class<?> ifc : getParentInterfaceForClass(clazz, includeJavaInterfaces)) {
+            if (ifc.getName().startsWith(JAVA_PACKAGE_NAME) && !includeJavaInterfaces) continue;
             interfaces.add(ifc);
-            interfaces.addAll(Arrays.asList(getParentInterfaceForInterface(ifc)));
+            interfaces.addAll(Arrays.asList(getParentInterfaceForInterface(ifc, includeJavaInterfaces)));
         }
 
         return toClassArray(interfaces);
     }
 
-    private static Class<?>[] getParentInterfaceForInterface(Class<?> clazz) {
+    private static Class<?>[] getParentInterfaceForInterface(Class<?> clazz, boolean includeJavaInterfaces) {
         Set<Class<?>> interfaces = new HashSet<>();
 
         for (Class<?> cla : clazz.getInterfaces()) {
+            if (cla.getName().startsWith(JAVA_PACKAGE_NAME) && !includeJavaInterfaces) continue;
             interfaces.add(cla);
             if (cla.getInterfaces().length > 0) {
                 interfaces.addAll(
-                        Arrays.asList(getParentInterfaceForInterface(cla)));
+                        Arrays.asList(getParentInterfaceForInterface(cla, includeJavaInterfaces)));
             }
         }
 
         return toClassArray(interfaces);
     }
 
-    private static Class<?>[] getParentInterfaceForClass(Class<?> clazz) {
+    private static Class<?>[] getParentInterfaceForClass(Class<?> clazz, boolean includeJavaInterfaces) {
+        if (clazz.getName().startsWith(JAVA_PACKAGE_NAME) && !includeJavaInterfaces) return EMPTY_CLASS_ARRAY;
         Set<Class<?>> interfaces = new HashSet<>(Arrays.asList(clazz.getInterfaces()));
 
         Class<?> localClass = clazz;
@@ -105,11 +109,11 @@ public class ClassUtils {
 
         // if classLoader is null then couldn't access
         classLoader = returnIfNull(classLoader,
-                (loader) -> ClassUtils.class.getClassLoader());
+                ClassUtils.class::getClassLoader);
 
         // if classloader is still null then use system
         classLoader = returnIfNull(classLoader,
-                (loader) -> ClassLoader.getSystemClassLoader());
+                ClassLoader::getSystemClassLoader);
 
         return classLoader;
     }
