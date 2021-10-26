@@ -1,20 +1,15 @@
 package com.rexijie.ioc.beans.factory;
 
 import com.rexijie.ioc.beans.store.BeanStore;
+import com.rexijie.ioc.errors.NoSuchBeanException;
 
-public interface BeanFactory extends BeanStore {
+public interface BeanFactory {
 
-    <T> void addBean(T beanInstance);
+    BeanStore getBeanStore();
 
-    <T> void addBean(Class<T> clazz);
+    <T> T getBean(Class<T> clazz) throws NoSuchBeanException;
 
-    <T> void addBean(String key, Class<T> clazz);
+    Object getBean(String name) throws NoSuchBeanException;
 
-    <T> void addBean(String key, T instance);
-
-    <T> T getBean(Class<T> clazz);
-
-    Object getBean(String name);
-
-    <T> T getBean(String name, Class<T> clazz);
+    <T> T getBean(String name, Class<T> clazz) throws NoSuchBeanException;
 }

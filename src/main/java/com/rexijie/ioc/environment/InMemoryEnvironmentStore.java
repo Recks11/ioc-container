@@ -18,4 +18,14 @@ public class InMemoryEnvironmentStore implements EnvironmentVariableStore {
             environmentVars.put(key, value);
         }
     }
+
+    @Override
+    public void remove(String key) {
+        environmentVars.remove(key);
+    }
+
+    @Override
+    public void clear() {
+        environmentVars.clear();
+    }
 }

@@ -10,7 +10,7 @@ public @interface Bean {
     /**
      *  The name of the bean
      */
-    String value() default "";
+    String name() default "";
 
     boolean primary() default false;
 }

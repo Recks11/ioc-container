@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ObjectUtil {
     private static final Logger logger = Logger.getLogger(ObjectUtil.class);
@@ -40,8 +41,15 @@ public class ObjectUtil {
         if (object == null) consumer.accept(null);
     }
 
-    public static <T> T returnIfNull(T object, Function<T, T> objectConsumer) {
-        if (object == null) return objectConsumer.apply(null);
+    public static <T> T returnIfNull(T object, Supplier<T> objectConsumer) {
+        if (object == null) {
+            try {
+                return objectConsumer.get();
+            } catch (Exception ex) {
+                logger.error("error calling supplier method");
+                throw new RuntimeException(ex);
+            }
+        }
         return object;
     }
 }

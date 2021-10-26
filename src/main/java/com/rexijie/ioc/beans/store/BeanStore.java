@@ -12,7 +12,13 @@ public interface BeanStore {
 
     <T> boolean containsBean(Class<T> beanClass);
 
-    <T> void registerBean(String key, T bean);
+    <T> void addBean(T beanInstance);
+
+    <T> void addBean(String key, Class<T> clazz);
+
+    <T> void addBean(String key, T instance);
+
+    void addBean(BeanWrapper<?> beanWrapper);
 
     Set<String> getBeanNamesOfType(Class<?> clazz);
 
@@ -26,6 +32,6 @@ public interface BeanStore {
      * @param key the key of the bean
      */
     default BeanWrapper<?> getRawBean(String key) {
-        return null;
+        throw new RuntimeException("Method Not Implemented");
     }
 }

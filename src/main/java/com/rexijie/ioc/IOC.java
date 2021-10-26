@@ -2,24 +2,33 @@ package com.rexijie.ioc;
 
 import com.rexijie.ioc.annotations.processor.ComponentAnnotationProcessor;
 import com.rexijie.ioc.context.ApplicationContext;
-import com.rexijie.ioc.context.EditableApplicationContext;
+import com.rexijie.ioc.context.ConfigurableApplicationContext;
+import com.rexijie.ioc.environment.ApplicationEnvironment;
+import com.rexijie.ioc.environment.Environment;
+import com.rexijie.ioc.errors.NoSuchBeanException;
+import com.rexijie.ioc.events.EventListener;
 import com.rexijie.ioc.util.BeanUtils;
 import com.rexijie.ioc.util.ClassUtils;
 import com.rexijie.ioc.util.ReflectionUtils;
 import org.apache.log4j.Logger;
+
+import java.util.List;
 
 public class IOC {
     private static final Logger LOGGER = Logger.getLogger(IOC.class);
     private static final String DEFAULT_APPLICATION_CONTEXT_CLASS = "com.rexijie.ioc.context.DefaultApplicationContext";
     private String rootPackage;
     private final Class<?> mainClass;
+    private final String[] appArgs;
 
-    private IOC(Class<?> main) {
-        this.mainClass = getMainClass();
+    private IOC(Class<?> main, String... args) {
+        this.mainClass = getMainClass(main);
+        this.appArgs = args;
         setRootPackage();
     }
 
-    private Class<?> getMainClass() {
+    private Class<?> getMainClass(Class<?> mainClass) {
+        if (mainClass != null) return mainClass;
         try {
             StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
             for (StackTraceElement element : stackTrace) {
@@ -31,25 +40,36 @@ public class IOC {
         } catch (Exception ex) {
             // do nothing
         }
-
+        // return passed class if no main method
         return mainClass;
     }
 
-    public static void run(Class<?> application) {
-        IOC iocApplication = new IOC(application);
+    public static void run(Class<?> application, String... args) {
+        IOC iocApplication = new IOC(application, args);
         iocApplication.run();
     }
 
     public ApplicationContext run() {
-        EditableApplicationContext context = null;
+        ConfigurableApplicationContext context;
         try {
-            context = (EditableApplicationContext) createContext();
+            context = (ConfigurableApplicationContext) createContext();
             loadBeans(getRootPackage(), context);
         } catch (Throwable ex) {
             LOGGER.error("error starting application: " + ex.getMessage());
+            throw new NoSuchBeanException(ex.getMessage(), ex);
         }
 
         return context;
+    }
+
+    private void prepareEnvironment(ApplicationContext context,
+                                    Environment environment) {
+        LOGGER.info("loading application environment");
+        if (environment == null) context.addBean(Environment.ENV_BEAN_NAME, new ApplicationEnvironment());
+        else {
+            context.removeBean(Environment.ENV_BEAN_NAME);
+            context.addBean(environment);
+        }
     }
 
     /**
@@ -76,14 +96,16 @@ public class IOC {
     }
 
     private ApplicationContext createContext() {
-        ApplicationContext context;
+        ConfigurableApplicationContext context;
         try {
+            LOGGER.debug("Creating Application Context");
             Class<?> contextClass = ClassUtils.getRootClassLoader().loadClass(deduceApplicationContextClass());
-            context = BeanUtils.instantiateBean(contextClass, ApplicationContext.class);
+            context = (ConfigurableApplicationContext) BeanUtils.instantiateBean(contextClass, ApplicationContext.class);
+            prepareEnvironment(context, null);
             refreshContext(context);
-//            prepareContext(context, environment, listeners, applicationArguments, printedBanner);
-//            refreshContext(context);
-//            afterRefresh(context, applicationArguments);
+//            prepareContext(context, context.getBean(Environment.ENV_BEAN_NAME), eventListeners, appArgs);
+            refreshContext(context);
+            afterRefresh(context, appArgs);
             return context;
         } catch (ClassNotFoundException exception) {
             throw new IllegalStateException("unable to create default application context " +
@@ -91,8 +113,17 @@ public class IOC {
         }
     }
 
+    private void prepareContext(ConfigurableApplicationContext applicationContext, Environment environment,
+                                List<EventListener<?>> eventListeners, String[] appArgs) {
+
+    }
+
     private void refreshContext(ApplicationContext context) {
         context.refresh();
+    }
+
+    private void afterRefresh(ConfigurableApplicationContext applicationContext, String[] appArgs) {
+
     }
 
     private String deduceApplicationContextClass() {

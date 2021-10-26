@@ -2,9 +2,9 @@ package com.rexijie.ioc.annotations.processor;
 
 import com.rexijie.ioc.annotations.AnnotationProcessor;
 import com.rexijie.ioc.annotations.Bean;
-import com.rexijie.ioc.beans.factory.AbstractBeanFactory;
 import com.rexijie.ioc.beans.factory.BeanFactory;
 import com.rexijie.ioc.beans.BeanWrapper;
+import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.errors.BeanCreationException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
 
@@ -17,10 +17,10 @@ import java.lang.reflect.Parameter;
  */
 public class BeanAnnotationProcessor implements AnnotationProcessor {
 
-    private final BeanFactory factory;
+    private final ApplicationContext context;
 
-    public BeanAnnotationProcessor(BeanFactory beanFactory) {
-        this.factory = beanFactory;
+    public BeanAnnotationProcessor(ApplicationContext context) {
+        this.context = context;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
 
         for (Method method : beanWrapper.getBean().getClass().getDeclaredMethods()) {
             if (method.isAnnotationPresent(Bean.class))
-                processBeanMethodAnnotation(method, beanWrapper.getBean());
+                processBeanMethodAnnotation(method, beanWrapper);
         }
     }
 
@@ -44,15 +44,12 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
             beanWrapper.setPrimary(true);
         }
 
-        if (!annotation.value().isEmpty()) {
-            String defaultName = beanWrapper.getBean().getClass().getName();
-            if (defaultName.equals(beanWrapper.getName())) {
-                beanWrapper.setName(annotation.value());
-            }
+        if (!annotation.name().isEmpty()) {
+            beanWrapper.setName(annotation.name());
         }
     }
 
-    protected void processBeanMethodAnnotation(Method method, Object thisObj) {
+    protected void processBeanMethodAnnotation(Method method, BeanWrapper<?> beanWrapper) {
         Class<?> returnType = method.getReturnType();
         String packageName = returnType.getPackage().getName();
         if (returnType.isPrimitive())
@@ -62,23 +59,25 @@ public class BeanAnnotationProcessor implements AnnotationProcessor {
             throw new BeanCreationException("Cannot Automatically create bean from internal class");
 
         Bean annotation = method.getAnnotation(Bean.class);
-        String name = annotation.value().isEmpty() ? method.getName() : annotation.value();
 
         int paramCount = method.getParameterCount();
         int index = 0;
         Object[] args = new Object[paramCount];
         for (Parameter parameter : method.getParameters()) {
-            if (!factory.containsBean(parameter.getType())) throw new NoSuchBeanException(parameter.getType());
-            args[index] = factory.getBean(parameter.getType());
+            try {
+                args[index] = context.getBean(parameter.getType());
+            } catch (NoSuchBeanException ex) {
+                throw new BeanCreationException(ex.getMessage(), ex);
+            }
             index++;
         }
 
         try {
-            Object obj = method.invoke(thisObj, args);
-            factory.registerBean(name, obj);
-
-            BeanWrapper<?> beanWrapper = ((AbstractBeanFactory)factory).getBeanWrapper(name);
-            processBeanAnnotation(annotation, beanWrapper);
+            Object obj = method.invoke(beanWrapper.getBean(), args);
+            BeanWrapper<?> bw = BeanWrapper.forInstance(obj);
+            bw.setName(method.getName());
+            processBeanAnnotation(annotation, bw);
+            context.addBean(bw);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new BeanCreationException(e);
         }

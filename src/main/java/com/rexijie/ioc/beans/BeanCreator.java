@@ -1,10 +1,9 @@
 package com.rexijie.ioc.beans;
 
 import com.rexijie.ioc.annotations.Named;
-import com.rexijie.ioc.beans.factory.BeanFactory;
 import com.rexijie.ioc.beans.store.BeanStore;
+import com.rexijie.ioc.context.ApplicationContext;
 import com.rexijie.ioc.errors.BeanCreationException;
-import com.rexijie.ioc.errors.NoSuchBeanException;
 import com.rexijie.ioc.util.ClassUtils;
 import org.apache.log4j.Logger;
 
@@ -27,23 +26,31 @@ import static com.rexijie.ioc.util.ClassUtils.isInternalType;
  * an instance of the class.
  */
 public class BeanCreator {
-    private final Logger logger = Logger.getLogger(BeanCreator.class);
-    private final BeanFactory beanFactory;
+    private final Logger LOG = Logger.getLogger(BeanCreator.class);
+    private final ApplicationContext context;
 
-    public BeanCreator(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
+    private BeanCreator(ApplicationContext context) {
+        this.context = context;
     }
 
-    public synchronized <T> String createBean(String key, Class<T> clazz) {
+    public static BeanCreator withContext(ApplicationContext context) {
+        return new BeanCreator(context);
+    }
+
+    public synchronized BeanWrapper<?> createBean(BeanWrapper<Object> beanWrapper) {
+        Object instance = createBean(beanWrapper.getName(), beanWrapper.getClazz());
+        beanWrapper.setBean(instance);
+        return beanWrapper;
+    }
+
+    public synchronized <T> BeanWrapper<?> createBean(String key, Class<T> clazz) {
+        LOG.debug("Creating Bean of Type " + clazz.getName());
         if (key == null) key = clazz.getName();
         if (clazz.isPrimitive()) {
             throw new RuntimeException("cannot instantiate primitive classes");
         }
         if (clazz.isInterface()) {
-            if (!beanFactory.containsBean(key)) {
-                throw new NoSuchBeanException(clazz);
-            }
-            return null;
+            return context.getRawBean(clazz.getName());
         }
 
         Constructor<?>[] ctorArr = clazz.getConstructors();
@@ -53,9 +60,10 @@ public class BeanCreator {
 
         Constructor<?> c = ctorArr[len - 1];
         int pCount = c.getParameterCount();
-
+        T instance;
         if (pCount == 0) {
-            return createAndStoreBean(key, c);
+            Object o = instantiateBean(key, c);
+            instance = clazz.cast(o);
         } else {
             Object[] objects = new Object[pCount];
             int idx = 0;
@@ -65,7 +73,7 @@ public class BeanCreator {
 
                 if (par.isAnnotationPresent(Named.class)) {
                     name = par.getDeclaredAnnotation(Named.class).value();
-                    objects[idx] = beanFactory.getBean(name);
+                    objects[idx] = context.getBean(name);
 
                 } else {
                     if (ClassUtils.isInternalType(par.getType())) {
@@ -75,43 +83,42 @@ public class BeanCreator {
 
                     if (par.getType().isInterface()) {
                         Class<?> interfaceClass = par.getType();
-                        objects[idx] = beanFactory.getBean(interfaceClass);
+                        objects[idx] = context.getBean(interfaceClass);
                         continue;
                     }
 
                     name = par.getType().getName();
-                    if (!beanFactory.containsBean(name)) { // instantiate bean if it doesn't exist
-                        createBean(name, par.getType());
-                    }
-                    objects[idx] = beanFactory.getBean(name); // use stored bean
+                    objects[idx] = context.getBean(name); // use stored bean
                     idx++;
                 }
             }
-            return createAndStoreBean(key, c, objects);
+            Object o = instantiateBean(key, c, objects);
+            instance = clazz.cast(o);
         }
+        LOG.debug("Created Bean of Type " + clazz.getName());
+        return BeanWrapper.forInstance(instance);
     }
 
     // @TODO find classes this method does not work for
-    private <T> String createAndStoreBean(String key, Constructor<T> c, Object... initArgs) {
+    private <T> T instantiateBean(String key, Constructor<T> c, Object... initArgs) {
         String name = key != null ? key : c.getDeclaringClass().getName();
         try {
-            if (beanFactory.containsBean(name)) return name;
+            if (context.containsBean(name)) return context.getBean(key, c.getDeclaringClass());
             if (isInternalType(c.getDeclaringClass()))
                 throw new BeanCreationException("Cannot Automatically create bean from internal class");
 
             executeBeforeCreate();
             T instance = c.newInstance(initArgs);
             executePostCreate();
-            beanFactory.registerBean(name, instance);
-            return name;
+            return instance;
         } catch (IllegalAccessException e) {
-            logger.error("No public constructor for class ".concat(c.getName()), e);
+            LOG.error("No public constructor for class ".concat(c.getName()), e);
         } catch (InstantiationException e) {
-            logger.error("Cannot instantiate abstract class ".concat(c.getName()), e);
+            LOG.error("Cannot instantiate abstract class ".concat(c.getName()), e);
         } catch (InvocationTargetException e) {
-            logger.error("There was an error in the constructor of class ".concat(c.getName()), e);
+            LOG.error("There was an error in the constructor of class ".concat(c.getName()), e);
         }
-        return name;
+        throw new BeanCreationException("Error Creating Bean");
     }
 
     private void executePostCreate() {

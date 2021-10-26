@@ -6,6 +6,8 @@ import com.rexijie.ioc.beans.BeanWrapper;
 import com.rexijie.ioc.beans.store.DefaultBeanStore;
 import com.rexijie.ioc.errors.MultipleBeansOfTypeException;
 import com.rexijie.ioc.errors.NoSuchBeanException;
+import com.rexijie.ioc.util.BeanUtils;
+import org.apache.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
@@ -16,6 +18,7 @@ import java.util.Set;
  * and default methods to add and remove beans
  */
 public abstract class AbstractBeanFactory implements BeanFactory {
+    private static final Logger LOG = Logger.getLogger(AbstractBeanFactory.class);
     private BeanStore beanStore = new DefaultBeanStore();
 
     /**
@@ -26,43 +29,24 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     }
 
     public AbstractBeanFactory(BeanStore instance) {
-        this.addBean(instance);
+        this.beanStore = instance;
+//       TODO this.addBean(instance);
     }
 
     public BeanStore getBeanStore() {
         return beanStore;
     }
 
-    public void setBeanStore(DefaultBeanStore beanStore) {
+    public void setBeanStore(BeanStore beanStore) {
         this.beanStore = beanStore;
-    }
-
-    public <T> void addBean(T beanInstance) {
-        registerBean(beanInstance.getClass().getName(), beanInstance);
-    }
-
-    public <T> void addBean(Class<T> clazz) {
-        addBean(null, clazz);
-    }
-
-    public <T> void addBean(String key, Class<T> clazz) {
-        createBean(key, clazz);
-    }
-
-    @Override
-    public <T> void addBean(String key, T instance) {
-        registerBean(key, instance);
-    }
-
-    public BeanWrapper<?> getBeanWrapper(String name) {
-        return beanStore.getRawBean(name);
     }
 
     @Override
     public Object getBean(String name) {
-        if (!containsBean(name)) throw new NoSuchBeanException("No bean named " + name);
-
-        return getBeanWrapper(name).getBean();
+        BeanWrapper<?> rawBean = beanStore.getRawBean(name);
+        if (rawBean.isInstantiated())
+            return rawBean.getBean();
+        return BeanUtils.instantiateBean(rawBean.getClazz());
     }
 
     @Override
@@ -73,60 +57,11 @@ public abstract class AbstractBeanFactory implements BeanFactory {
     @Override
     public <T> T getBean(Class<T> clazz) {
         if (clazz.isInterface()) {
-            Set<String> beans = beanStore.getBeanNamesOfType(clazz);
-            if (beans == null || beans.size() < 1) throw new NoSuchBeanException(clazz);
-            // if there is exactly one bean of this interface type
-            if (beans.size() == 1) {
-                String beanName = beans.iterator().next();
-                return getBean(beanName, clazz);
-            }
-
-            Optional<String> primaryBeanOptional = beans
-                    .stream()
-                    .filter(key -> getBeanWrapper(key).isPrimary())
-                    .findFirst();
-
-            if (primaryBeanOptional.isPresent()) {
-                return getBean(primaryBeanOptional.get(), clazz);
-            } else {
-                throw new MultipleBeansOfTypeException(clazz);
-            }
+            Object o = beanStore.getRawBean(clazz.getName()).getBean();
+            return clazz.cast(o);
         }
 
         return getBean(clazz.getName(), clazz);
-    }
-
-    @Override
-    public Set<String> getBeanNamesOfType(Class<?> clazz) {
-        return beanStore.getBeanNamesOfType(clazz);
-    }
-
-
-    @Override
-    public boolean containsBean(String name) {
-        return beanStore.containsBean(name);
-    }
-
-    @Override
-    public <T> boolean containsBean(T beanInstance) {
-        return beanStore.containsBean(beanInstance);
-    }
-
-    @Override
-    public <T> boolean containsBean(Class<T> beanClass) {
-        return beanStore.containsBean(beanClass);
-    }
-
-    @Override
-    public <T> void registerBean(String key, T bean) {
-        beanStore.registerBean(key, bean);
-        getAnnotationProcessor()
-                .processAnnotation(getBeanWrapper(key));
-    }
-
-    @Override
-    public void removeBean(String key) {
-        beanStore.removeBean(key);
     }
 
     public abstract AnnotationProcessor getAnnotationProcessor();

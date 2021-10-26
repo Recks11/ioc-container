@@ -10,7 +10,7 @@ public class InnerBeanClass {
         return new NamedClass();
     }
 
-    @Bean(value = "customBean", primary = true)
+    @Bean(name = "customBean", primary = true)
     public Named namedBean2() {
         return new NamedClass();
     }
